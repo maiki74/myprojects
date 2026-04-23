@@ -3,10 +3,43 @@
   const MODAL_ID = "twitch-channel-notes-modal";
   const STORAGE_PREFIX = "twitch_channel_notes:";
   const FONT_SIZE_PREFIX = "twitch_channel_notes_font_size:";
+  const FONT_FAMILY_PREFIX = "twitch_channel_notes_font_family:";
   const DEFAULT_FONT_SIZE = 15;
   const MIN_FONT_SIZE = 12;
   const MAX_FONT_SIZE = 30;
   const FONT_STEP = 1;
+  const AVAILABLE_FONTS = [
+    "Inter, sans-serif",
+    "Arial, sans-serif",
+    "Helvetica, Arial, sans-serif",
+    "Verdana, sans-serif",
+    "Tahoma, sans-serif",
+    "Trebuchet MS, sans-serif",
+    "Segoe UI, sans-serif",
+    "Roboto, sans-serif",
+    "Open Sans, sans-serif",
+    "Lato, sans-serif",
+    "Poppins, sans-serif",
+    "Montserrat, sans-serif",
+    "Nunito, sans-serif",
+    "Ubuntu, sans-serif",
+    "Fira Sans, sans-serif",
+    "Source Sans Pro, sans-serif",
+    "Merriweather, serif",
+    "Georgia, serif",
+    "Times New Roman, serif",
+    "Playfair Display, serif",
+    "PT Serif, serif",
+    "Bitter, serif",
+    "Courier New, monospace",
+    "Consolas, monospace",
+    "Fira Code, monospace",
+    "JetBrains Mono, monospace",
+    "Source Code Pro, monospace",
+    "Inconsolata, monospace",
+    "Comic Sans MS, cursive",
+    "Lucida Console, monospace"
+  ];
 
   function getChannelFromPath() {
     const path = window.location.pathname
@@ -54,6 +87,11 @@
     return channel ? `${FONT_SIZE_PREFIX}${channel}` : null;
   }
 
+  function getFontFamilyKey() {
+    const channel = getChannelFromPath();
+    return channel ? `${FONT_FAMILY_PREFIX}${channel}` : null;
+  }
+
   function storageGet(key) {
     return new Promise((resolve) => {
       chrome.storage.local.get([key], (result) => {
@@ -79,14 +117,19 @@
     }
 
     const fontSizeKey = getFontSizeKey();
+    const fontFamilyKey = getFontFamilyKey();
     const currentValue = await storageGet(key);
     const savedFontRaw = fontSizeKey ? await storageGet(fontSizeKey) : "";
+    const savedFontFamilyRaw = fontFamilyKey ? await storageGet(fontFamilyKey) : "";
 
     let fontSize = Number.parseInt(savedFontRaw, 10);
     if (!Number.isFinite(fontSize)) {
       fontSize = DEFAULT_FONT_SIZE;
     }
     fontSize = Math.max(MIN_FONT_SIZE, Math.min(MAX_FONT_SIZE, fontSize));
+    let fontFamily = AVAILABLE_FONTS.includes(savedFontFamilyRaw)
+      ? savedFontFamilyRaw
+      : AVAILABLE_FONTS[0];
 
     const backdrop = document.createElement("div");
     backdrop.id = MODAL_ID;
@@ -117,6 +160,22 @@
     const autosaveLabel = document.createElement("span");
     autosaveLabel.textContent = "Autosave ativo • Rodinha aumenta a fonte (Alt+rodinha diminui).";
 
+    const rightControls = document.createElement("div");
+    rightControls.className = "notes-right-controls";
+
+    const fontFamilySelect = document.createElement("select");
+    fontFamilySelect.className = "notes-font-family";
+    fontFamilySelect.setAttribute("aria-label", "Selecionar fonte");
+
+    for (const font of AVAILABLE_FONTS) {
+      const option = document.createElement("option");
+      option.value = font;
+      option.textContent = font.split(",")[0];
+      fontFamilySelect.appendChild(option);
+    }
+
+    fontFamilySelect.value = fontFamily;
+
     const fontSizeLabel = document.createElement("span");
     fontSizeLabel.className = "notes-font-size";
 
@@ -126,10 +185,14 @@
 
     updateFontSizeLabel();
 
+    rightControls.appendChild(fontFamilySelect);
+    rightControls.appendChild(fontSizeLabel);
+
     footer.appendChild(autosaveLabel);
-    footer.appendChild(fontSizeLabel);
+    footer.appendChild(rightControls);
 
     textarea.style.fontSize = `${fontSize}px`;
+    textarea.style.fontFamily = fontFamily;
 
     dialog.appendChild(header);
     dialog.appendChild(textarea);
@@ -156,6 +219,13 @@
       await storageSet(fontSizeKey, String(fontSize));
     };
 
+    const saveFontFamily = async () => {
+      if (!fontFamilyKey) {
+        return;
+      }
+      await storageSet(fontFamilyKey, fontFamily);
+    };
+
     const scheduleFontSizeSave = () => {
       if (fontSizeSaveTimer) {
         window.clearTimeout(fontSizeSaveTimer);
@@ -172,6 +242,7 @@
         fontSizeSaveTimer = null;
       }
       await saveFontSize();
+      await saveFontFamily();
       await save();
       backdrop.remove();
     };
@@ -198,6 +269,12 @@
       { passive: false }
     );
 
+    fontFamilySelect.addEventListener("change", async () => {
+      fontFamily = fontFamilySelect.value;
+      textarea.style.fontFamily = fontFamily;
+      await saveFontFamily();
+    });
+
     backdrop.addEventListener("click", async (event) => {
       if (event.target === backdrop) {
         await closeModal();
@@ -212,6 +289,9 @@
         const payload = { [key]: textarea.value };
         if (fontSizeKey) {
           payload[fontSizeKey] = String(fontSize);
+        }
+        if (fontFamilyKey) {
+          payload[fontFamilyKey] = fontFamily;
         }
         chrome.storage.local.set(payload);
       },
