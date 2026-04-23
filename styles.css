@@ -1,0 +1,87 @@
+#twitch-channel-notes-button {
+  margin-left: 0.5rem;
+}
+
+#twitch-channel-notes-button .notes-trigger {
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 0.4rem;
+  padding: 0.3rem 0.55rem;
+  background: #9147ff;
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+
+#twitch-channel-notes-button .notes-trigger:hover {
+  background: #772ce8;
+}
+
+#twitch-channel-notes-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 999999;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#twitch-channel-notes-modal .notes-dialog {
+  width: min(680px, 92vw);
+  height: min(72vh, 820px);
+  display: flex;
+  flex-direction: column;
+  background: #18181b;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 0.8rem;
+  box-shadow: 0 10px 36px rgba(0, 0, 0, 0.5);
+}
+
+#twitch-channel-notes-modal .notes-header {
+  padding: 0.9rem 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  color: #efeff1;
+  font-size: 1rem;
+  font-weight: 700;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+#twitch-channel-notes-modal .notes-close {
+  border: 0;
+  background: transparent;
+  color: #efeff1;
+  font-size: 1.3rem;
+  cursor: pointer;
+}
+
+#twitch-channel-notes-modal textarea {
+  resize: none;
+  border: 0;
+  outline: none;
+  flex: 1;
+  background: #0e0e10;
+  color: #efeff1;
+  font-size: 0.95rem;
+  line-height: 1.45;
+  padding: 1rem;
+}
+
+#twitch-channel-notes-modal .notes-footer {
+  padding: 0.55rem 1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  color: #adadb8;
+  font-size: 0.8rem;
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+#twitch-channel-notes-modal .notes-font-size {
+  color: #bf94ff;
+  font-weight: 600;
+  font-size: 0.82rem;
+  white-space: nowrap;
+}

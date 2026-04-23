@@ -1,0 +1,15 @@
+{
+  "manifest_version": 3,
+  "name": "Twitch Channel Notes",
+  "version": "1.0.1",
+  "description": "Adiciona um botão no chat da Twitch para salvar notas ilimitadas por canal.",
+  "content_scripts": [
+    {
+      "matches": ["https://www.twitch.tv/*"],
+      "js": ["content.js"],
+      "css": ["styles.css"],
+      "run_at": "document_idle"
+    }
+  ],
+  "permissions": ["storage"]
+}
