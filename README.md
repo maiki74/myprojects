@@ -1,29 +1,29 @@
 # Live Radar & Twitch Pins
 
-Duas extensões independentes para o Brave e navegadores compatíveis com Chromium. Cada projeto tem sua própria pasta, manifesto e guia de instalação.
+Two independent extensions for Brave and other Chromium browsers. Each project has its own folder, manifest, and installation guide.
 
-| Projeto | O que faz | Arquivos e guia |
+| Project | What it does | Files and guide |
 | --- | --- | --- |
-| **Live Radar** | Notifica quando canais da Twitch e do YouTube entram ao vivo, com ações para ignorar, assistir ou abrir de fundo com áudio mudo. | [live-radar](live-radar/README.md) |
-| **Twitch Pins** | Fixa canais acima dos seguidos na Twitch, com alfinete compacto e olhinho para recolher a lista. | [twitch-pins](twitch-pins/README.md) |
+| **Live Radar** | Notifies you when Twitch and YouTube channels go live, with actions to ignore, watch, or open muted in the background. | [live-radar](live-radar/README.md) |
+| **Twitch Pins** | Pins channels above your followed channels on Twitch, with a compact pin button and an eye button to collapse the list. | [twitch-pins](twitch-pins/README.md) |
 
-## Instalar no Brave
+## Install in Brave
 
-1. Baixe o repositório em **Code → Download ZIP** e extraia os arquivos.
-2. Abra `brave://extensions` e ative **Modo do desenvolvedor**.
-3. Clique em **Carregar sem compactação** e escolha `live-radar` ou `twitch-pins`.
-4. Recarregue as abas já abertas. Para instalar as duas, repita o passo anterior com a outra pasta.
+1. Download the repository using **Code → Download ZIP** and extract the files.
+2. Open `brave://extensions` and enable **Developer mode**.
+3. Click **Load unpacked** and select `live-radar` or `twitch-pins`.
+4. Reload any tabs that were already open. To install both extensions, repeat the previous step with the other folder.
 
-Não é necessário compilar nem instalar dependências. A Live Radar exige configurar a conexão com a Twitch para monitorar essa plataforma; veja seu guia. A Twitch Pins salva os favoritos localmente e não precisa dessa conexão.
+No build or dependency installation is required. Live Radar requires a Twitch connection to monitor that platform; see its guide. Twitch Pins stores your pins locally and does not require that connection.
 
-Para atualizar uma extensão existente sem perder as configurações locais, copie os arquivos novos para a mesma pasta da instalação anterior, recarregue a extensão no Brave e recarregue as abas.
+To update an existing extension and keep your local settings, copy the new files into the same installation folder, reload the extension in Brave, and reload your tabs.
 
-## Testes
+## Tests
 
-Com Node.js 20 ou superior, na raiz:
+With Node.js 20 or later, run this from the repository root:
 
 ```sh
 npm test
 ```
 
-Também é possível executar `npm test` dentro da pasta de cada projeto. Os testes usam respostas simuladas e não exigem contas ou credenciais reais. Os guias de cada extensão descrevem as validações e limitações da integração com os sites.
+You can also run `npm test` inside each project folder. Tests use simulated responses and do not require real accounts or credentials. Each extension’s guide describes its validation coverage and site integration limits.

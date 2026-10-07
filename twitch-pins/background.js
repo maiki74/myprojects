@@ -44,20 +44,20 @@ async function doRefresh() {
         headers: { 'Content-Type': 'application/json', 'Client-ID': WEBSITE_CLIENT_ID },
         body: JSON.stringify(batch.map(pin => ({ operationName: 'PinnedChannel', variables: { login: pin.login }, query: QUERY })))
       });
-      if (!response.ok) throw new Error(`A Twitch respondeu HTTP ${response.status}.`);
+      if (!response.ok) throw new Error(`Twitch returned HTTP ${response.status}.`);
       const body = await response.json();
-      if (!Array.isArray(body) || body.length !== batch.length) throw new Error('A Twitch retornou uma resposta inesperada.');
+      if (!Array.isArray(body) || body.length !== batch.length) throw new Error('Twitch returned an unexpected response.');
       batch.forEach((pin, index) => {
         const result = body[index];
         if (result.errors?.length) {
-          updates[pin.login] = { error: 'A consulta pública da Twitch está indisponível.' };
-          errors.push(pin.login + ': consulta indisponível');
+          updates[pin.login] = { error: 'The public Twitch lookup is unavailable.' };
+          errors.push(pin.login + ': lookup unavailable');
         } else if (!result.data?.user) {
-          updates[pin.login] = { error: 'Canal não encontrado na Twitch.' };
-          errors.push(pin.login + ': canal não encontrado');
+          updates[pin.login] = { error: 'Channel not found on Twitch.' };
+          errors.push(pin.login + ': channel not found');
         } else if (result.data.user.login?.toLowerCase() !== pin.login) {
-          updates[pin.login] = { error: 'A Twitch retornou outro canal.' };
-          errors.push(pin.login + ': resposta de outro canal');
+          updates[pin.login] = { error: 'Twitch returned a different channel.' };
+          errors.push(pin.login + ': response from a different channel');
         } else updates[pin.login] = { user: result.data.user };
       });
     } catch (error) {
@@ -91,10 +91,10 @@ async function handle(message, sender) {
   if (!trusted) {
     try { const site = new URL(url); trusted = site.protocol === 'https:' && ['www.twitch.tv', 'twitch.tv'].includes(site.hostname); } catch {}
   }
-  if (!trusted) throw new Error('Esta ação está disponível somente na Twitch e no painel da extensão.');
+  if (!trusted) throw new Error('This action is only available on Twitch and in the extension panel.');
   if (message.type === 'GET_STATE') return read();
   if (message.type === 'SET_SIDEBAR_COLLAPSED') {
-    if (typeof message.collapsed !== 'boolean') throw new Error('Estado da lista inválido.');
+    if (typeof message.collapsed !== 'boolean') throw new Error('Invalid list state.');
     await mutate(() => chrome.storage.local.set({ sidebarCollapsed: message.collapsed }));
     return read();
   }
@@ -135,7 +135,7 @@ async function handle(message, sender) {
     });
     return read();
   }
-  throw new Error('Ação desconhecida.');
+  throw new Error('Unknown action.');
 }
 chrome.runtime.onMessage.addListener((message, sender, respond) => {
   handle(message, sender).then(data => respond({ ok: true, data }), error => respond({ ok: false, error: error.message }));

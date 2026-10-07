@@ -28,22 +28,22 @@
         meta.className = 'meta';
         const dot = document.createElement('span');
         dot.className = 'dot';
-        meta.append(dot, document.createTextNode('Ao vivo · ' + (item.platform === 'twitch' ? 'Twitch' : 'YouTube')));
+        meta.append(dot, document.createTextNode('Live · ' + (item.platform === 'twitch' ? 'Twitch' : 'YouTube')));
         const heading = document.createElement('h3');
         heading.textContent = item.name;
         const title = document.createElement('p');
         title.textContent = item.title;
         const actions = document.createElement('div');
         actions.className = 'actions';
-        for (const [label, action, muted] of [['Ignorar', 'DISMISS', false], ['De fundo, mudo', 'OPEN', true], ['Assistir', 'OPEN', false]]) {
+        for (const [label, action, muted] of [['Ignore', 'DISMISS', false], ['Background, muted', 'OPEN', true], ['Watch', 'OPEN', false]]) {
           const button = document.createElement('button');
           button.textContent = label;
-          if (label === 'Assistir') button.className = 'watch';
+          if (label === 'Watch') button.className = 'watch';
           button.addEventListener('click', async () => {
             button.disabled = true;
             try {
               const result = await chrome.runtime.sendMessage({ type: action, id: item.id, muted });
-              if (!result?.ok) throw new Error(result?.error || 'Não foi possível abrir a transmissão.');
+              if (!result?.ok) throw new Error(result?.error || 'Could not open the stream.');
               await refresh();
             } catch (error) {
               let text = card.querySelector('.error');

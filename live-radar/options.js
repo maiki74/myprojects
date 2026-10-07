@@ -2,7 +2,7 @@ import { DEFAULT_SETTINGS } from './lib.js';
 const $ = id => document.getElementById(id);
 async function send(type, data = {}) {
   const result = await chrome.runtime.sendMessage({ type, ...data });
-  if (!result?.ok) throw new Error(result?.error || 'A extensão não respondeu.');
+  if (!result?.ok) throw new Error(result?.error || 'The extension did not respond.');
   return result.data;
 }
 function status(text, error = false) { $('status').textContent = text; $('status').classList.toggle('error', error); }
@@ -25,32 +25,32 @@ async function load(fill = true) {
     $('interval').value = settings.intervalMinutes;
   }
   $('redirect-url').value = data.redirectURL;
-  $('connection').textContent = data.connected ? 'Conectada' : 'Não conectada';
+  $('connection').textContent = data.connected ? 'Connected' : 'Not connected';
   $('connection').classList.toggle('connected', data.connected);
   $('disconnect').hidden = !data.connected;
 }
 $('settings-form').addEventListener('submit', async event => {
   event.preventDefault();
-  try { await send('SAVE_SETTINGS', { settings: readForm() }); await load(); status('Configurações salvas.'); }
+  try { await send('SAVE_SETTINGS', { settings: readForm() }); await load(); status('Settings saved.'); }
   catch (error) { status(error.message, true); }
 });
 $('connect').addEventListener('click', async () => {
   $('connect').disabled = true;
-  status('Aguardando autorização na Twitch…');
+  status('Waiting for Twitch authorization…');
   try {
     await send('SAVE_SETTINGS', { settings: readForm() });
     await send('CONNECT_TWITCH');
     await load(false);
-    status('Twitch conectada. Monitoramento iniciado.');
+    status('Twitch connected. Monitoring started.');
   } catch (error) { status(error.message, true); }
   finally { $('connect').disabled = false; }
 });
 $('disconnect').addEventListener('click', async () => {
-  try { await send('DISCONNECT_TWITCH'); await load(false); status('Twitch desconectada.'); }
+  try { await send('DISCONNECT_TWITCH'); await load(false); status('Twitch disconnected.'); }
   catch (error) { status(error.message, true); }
 });
 $('test').addEventListener('click', async () => {
-  try { await send('TEST_NOTIFICATION'); status('Aviso enviado. Abra uma aba comum para ver os três botões.'); }
+  try { await send('TEST_NOTIFICATION'); status('Alert sent. Open a regular web page to try the three buttons.'); }
   catch (error) { status(error.message, true); }
 });
 load().catch(error => status(error.message, true));

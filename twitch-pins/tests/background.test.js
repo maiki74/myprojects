@@ -20,7 +20,7 @@ async function setup(initial = {}, network = async () => new Response(JSON.strin
 const pinned = { login: 'example', displayName: 'example', pinnedAt: 1000 };
 function live(session = 'one') { return [{ data: { user: { login: 'example', displayName: 'Example', broadcastSettings: { title: 'Live' }, stream: { id: session, viewersCount: 12 } } } }]; }
 
-test('fixar persiste localmente, agenda consultas e não executa seguir ou inscrever', async () => {
+test('pinning persists locally, schedules lookups, and does not follow or subscribe', async () => {
   const h = await setup();
   assert.equal((await h.send('PIN', { login: 'EXAMPLE' })).ok, true);
   await h.send('REFRESH');
@@ -32,7 +32,7 @@ test('fixar persiste localmente, agenda consultas e não executa seguir ou inscr
   assert.match(JSON.parse(request[2].body)[0].query, /^query /);
   assert.doesNotMatch(request[2].body, /mutation|followUser|subscribe/i);
 });
-test('consultas preservam o status atual entre reinícios sem histórico de lives', async () => {
+test('lookups preserve current status across restarts without stream history', async () => {
   let session = 'one';
   const h = await setup({ pins: [pinned] }, async () => new Response(JSON.stringify(live(session))));
   await h.send('REFRESH'); await h.send('REFRESH');
@@ -45,7 +45,7 @@ test('consultas preservam o status atual entre reinícios sem histórico de live
   assert.equal(restarted.data.channelState.example.online, true);
   assert.equal('history' in restarted.data.channelState.example, false);
 });
-test('erro de rede mantém último estado, com status indisponível', async () => {
+test('network errors preserve the last status and mark it unavailable', async () => {
   const previous = { online: true, history: [{ session: 'one', firstSeenAt: Date.now() }], checkedAt: 1234 };
   const h = await setup({ pins: [pinned], channelState: { example: previous } }, async () => new Response('', { status: 429 }));
   await h.send('REFRESH');
@@ -55,32 +55,32 @@ test('erro de rede mantém último estado, com status indisponível', async () =
   assert.equal(h.data.lastSuccess, undefined);
   assert.equal(h.calls.filter(call => call[0] === 'badge').at(-1)[1].text, '');
 });
-test('erro GraphQL ou canal ausente não é interpretado como offline', async () => {
+test('GraphQL errors and missing channels are not treated as offline', async () => {
   const h = await setup({ pins: [pinned] }, async () => new Response(JSON.stringify([{ errors: [{ message: 'Unavailable' }] }])));
   await h.send('REFRESH');
   assert.equal(h.data.channelState.example.online, undefined);
-  assert.match(h.data.channelState.example.error, /indisponível/);
+  assert.match(h.data.channelState.example.error, /unavailable/);
 });
-test('canal retornado precisa corresponder ao login solicitado', async () => {
+test('returned channels must match the requested login', async () => {
   const h = await setup({ pins: [pinned] }, async () => new Response(JSON.stringify([{ data: { user: { login: 'different', stream: { id: 'one' } } } }])));
   await h.send('REFRESH');
-  assert.match(h.data.channelState.example.error, /outro canal/);
+  assert.match(h.data.channelState.example.error, /different channel/);
   assert.equal(h.data.channelState.example.online, undefined);
 });
-test('resposta sem campo de stream preserva o último estado conhecido', async () => {
+test('responses without stream data preserve the last known status', async () => {
   const h = await setup({ pins: [pinned], channelState: { example: { online: true, history: [] } } }, async () => new Response(JSON.stringify([{ data: { user: { login: 'example' } } }])));
   await h.send('REFRESH');
   assert.equal(h.data.channelState.example.online, true);
-  assert.match(h.data.channelState.example.error, /estado válido/);
+  assert.match(h.data.channelState.example.error, /valid channel status/);
 });
-test('desafixar remove estado e cancela o alarme quando vazio', async () => {
+test('unpinning removes channel status and cancels the alarm when the list is empty', async () => {
   const h = await setup({ pins: [pinned], channelState: { example: { online: true, history: [{ session: 'one' }] } } });
   await h.send('UNPIN', { login: 'example' });
   assert.deepEqual(h.data.pins, []);
   assert.deepEqual(h.data.channelState, {});
   assert.equal(h.calls.some(call => call[0] === 'alarm'), false);
 });
-test('resposta atrasada não devolve um canal já desafixado', async () => {
+test('delayed responses do not restore an unpinned channel', async () => {
   let release, resolveResponse;
   const started = new Promise(resolve => { release = resolve; });
   const h = await setup({ pins: [pinned] }, () => { release(); return new Promise(resolve => { resolveResponse = resolve; }); });
@@ -92,7 +92,7 @@ test('resposta atrasada não devolve um canal já desafixado', async () => {
   assert.deepEqual(h.data.pins, []);
   assert.deepEqual(h.data.channelState, {});
 });
-test('organiza a lista e abre apenas canais normalizados da Twitch', async () => {
+test('reorders the list and only opens normalized Twitch channels', async () => {
   const h = await setup({ pins: [pinned, { login: 'other' }] });
   await h.send('MOVE', { login: 'other', direction: 'up' });
   assert.equal(h.data.pins[0].login, 'other');
@@ -100,14 +100,14 @@ test('organiza a lista e abre apenas canais normalizados da Twitch', async () =>
   assert.deepEqual(h.calls.find(call => call[0] === 'tab')[1], { url: 'https://www.twitch.tv/example' });
   assert.equal((await h.send('OPEN_CHANNEL', { login: 'https://evil.test/example' })).ok, false);
 });
-test('mensagens vindas de outros sites são recusadas', async () => {
+test('messages from other sites are rejected', async () => {
   const h = await setup({ pins: [pinned] });
   assert.equal((await h.send('GET_STATE', {}, 'https://www.twitch.tv.evil.test')).ok, false);
   assert.equal((await h.send('PIN', { login: 'other' }, 'https://evil.test')).ok, false);
   assert.equal((await h.send('GET_STATE', {}, 'chrome-extension://pins/popup.html')).ok, true);
 });
 
-test('preferência do olhinho persiste sem modificar favoritos e sobrevive ao reinício', async () => {
+test('eye button preference persists without changing pins and survives restarts', async () => {
   const h = await setup({ pins: [pinned] });
   const hidden = await h.send('SET_SIDEBAR_COLLAPSED', { collapsed: true });
   assert.equal(hidden.data.sidebarCollapsed, true);
@@ -118,7 +118,7 @@ test('preferência do olhinho persiste sem modificar favoritos e sobrevive ao re
   assert.equal(restarted.data.sidebarCollapsed, false);
   assert.equal((await restarted.send('SET_SIDEBAR_COLLAPSED', { collapsed: 'false' })).ok, false);
 });
-test('atualização remove histórico antigo mantendo fixados, ordem e preferência', async () => {
+test('updates remove old history while preserving pins, order, and preferences', async () => {
   const pins = [pinned, { login: 'other', pinnedAt: 42 }];
   const h = await setup({ pins, sidebarCollapsed: true, channelState: { example: { online: true, session: 'one', history: [{ session: 'one' }], displayName: 'Example' } } });
   await h.listeners.installed();

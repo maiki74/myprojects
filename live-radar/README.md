@@ -1,68 +1,72 @@
-# Live Radar para Brave
+# Live Radar for Brave
 
-Extensão Manifest V3 que acompanha uma lista de streamers da Twitch e de canais do YouTube. Ao detectar uma nova transmissão, mostra um aviso na aba em uso com **Ignorar**, **De fundo, mudo** e **Assistir**. Não depende de um servidor próprio.
+A Manifest V3 extension that monitors a list of Twitch streamers and YouTube channels. When a new stream starts, it shows an alert in the active tab with **Ignore**, **Background, muted**, and **Watch**. It does not require a separate server.
 
-## Instalar
+## Install
 
-1. Baixe este projeto e extraia o ZIP, se necessário.
-2. Abra `brave://extensions` e ative **Modo do desenvolvedor**.
-3. Clique em **Carregar sem compactação** e escolha a pasta que contém `manifest.json`.
-4. Fixe **Live Radar** na barra do navegador e abra **Configurações**.
-5. Adicione os canais, um por linha, e salve. Recarregue as abas que já estavam abertas antes da instalação para ativar os avisos dentro delas.
-6. Use **Testar aviso** e abra uma página comum HTTP/HTTPS para conferir os três botões.
+1. Download this project and extract the ZIP if needed.
+2. Open `brave://extensions` and enable **Developer mode**.
+3. Click **Load unpacked** and select the folder containing `manifest.json`.
+4. Pin **Live Radar** to the browser toolbar and open **Settings**.
+5. Add channels, one per line, and save. Reload tabs that were open before installation to enable in-tab alerts.
+6. Use **Test alert**, then open a regular HTTP/HTTPS page to try the three buttons.
 
-Não há instalação de pacotes nem compilação. A pasta da extensão deve permanecer no disco enquanto estiver instalada.
+No packages or build step are required. Keep the extension folder on disk while it is installed.
 
 ## Twitch
 
-A API oficial exige um Client ID e uma conexão OAuth. O projeto não inclui credenciais compartilhadas.
+The official API requires a Client ID and an OAuth connection. This project does not include shared credentials.
 
-1. Acesse <https://dev.twitch.tv/console/apps>, habilite autenticação em duas etapas na conta e registre uma aplicação.
-2. Escolha **Browser Extension** como categoria, se disponível. Esta extensão usa o fluxo OAuth implícito; mantenha **Confidential** como tipo da aplicação para esse fluxo (o tipo **Public** é destinado ao fluxo de código de dispositivo da Twitch). O fluxo implícito não usa Client Secret: não gere, compartilhe ou inclua esse segredo na extensão. Copie a URL OAuth exibida nas configurações da extensão para a lista de URLs de redirecionamento da aplicação. Cada instalação pode ter um ID diferente; use a URL mostrada na sua instalação.
-3. Cole o **Client ID**, salve e clique em **Conectar Twitch**. Autorize a conexão na janela da Twitch.
-4. Informe os logins dos streamers, como `alanzoka`, ou os links dos canais.
+1. Visit <https://dev.twitch.tv/console/apps>, enable two-factor authentication on your account, and register an application.
+2. Choose **Browser Extension** as the category if available. This extension uses the implicit OAuth flow; keep the application type set to **Confidential** for this flow (**Public** is intended for Twitch’s device code flow). The implicit flow does not use a Client Secret: do not generate, share, or include one in the extension. Add the OAuth URL shown in the extension’s settings to the application’s redirect URL list. Each installation may have a different ID; use the URL shown in your installation.
+3. Paste the **Client ID**, save, and click **Connect Twitch**. Authorize the connection in the Twitch window.
+4. Enter streamer logins, such as `alanzoka`, or channel URLs.
 
-O fluxo de autorização implícita não usa Client Secret e não solicita permissões adicionais de chat ou gerenciamento da conta. O token é validado ao iniciar o navegador e pelo menos a cada hora enquanto houver canais Twitch configurados. Ele fica somente no armazenamento local da extensão e não é sincronizado. Quando expirar ou for revogado, o painel pede uma nova conexão. **Desconectar** revoga o token na Twitch.
+The implicit authorization flow does not use a Client Secret or request extra chat or account management permissions. The token is validated on browser startup and at least once per hour while Twitch channels are configured. It stays in the extension’s local storage and is not synced. When it expires or is revoked, the panel asks you to reconnect. **Disconnect** revokes the token on Twitch.
 
 ## YouTube
 
-Adicione `@identificador`, `https://www.youtube.com/@identificador` ou a URL `https://www.youtube.com/channel/UC…`.
+Add `@handle`, `https://www.youtube.com/@handle`, or a `https://www.youtube.com/channel/UC…` URL.
 
-A extensão consulta a página pública `/live` do canal e confirma `isLiveNow` nos dados do player. Também reconhece páginas que apresentam uma aba de lives em vez de redirecionar para a transmissão. Não precisa de chave de API. Ela não executa scripts dessas páginas. O dono da transmissão precisa corresponder ao canal da lista; recomendações de outros canais não geram avisos. Quando necessário, resolve o @identificador pelos metadados da página do próprio canal. Se o YouTube não confirmar um identificador, use o ID `UC…`.
+The extension checks the channel’s public `/live` page and confirms `isLiveNow` in the player data. It also handles pages that show a live tab instead of redirecting to a stream. No API key is required, and it does not execute page scripts. The stream owner must match a channel in your list; recommendations from other channels do not trigger alerts. When needed, the extension resolves the @handle through the channel page’s metadata. If YouTube cannot confirm a handle, use the `UC…` ID.
 
-Este mecanismo depende do formato público do YouTube. Páginas de consentimento, mudanças de formato, limites de acesso e lives privadas, restritas ou exclusivas para membros podem impedir a detecção. Erros aparecem no painel e preservam o último estado conhecido; um canal com erro não é automaticamente considerado offline. O painel pode, portanto, exibir um estado antigo enquanto a consulta falha.
+This mechanism depends on YouTube’s public page format. Consent pages, format changes, rate limits, and private, restricted, or members-only streams may prevent detection. Errors appear in the panel and preserve the last known status; a channel with an error is not automatically treated as offline. The panel may therefore show an older status while a lookup fails.
 
-## Comportamento dos avisos
+## Alert behavior
 
-- **Ignorar:** remove o aviso de todas as abas e não abre a transmissão.
-- **De fundo, mudo:** cria uma nova aba sem foco, silencia a aba antes de navegar e carrega a transmissão. A política de reprodução automática do Brave ou do site pode exigir iniciar o player manualmente.
-- **Assistir:** abre a transmissão em uma nova aba ativa.
-- O painel da extensão mostra o último estado conhecido dos canais. Também permite abrir uma live cujo aviso já foi ignorado.
-- Cada transmissão gera apenas um aviso, inclusive após a reinicialização do navegador. Uma nova transmissão do mesmo canal gera outro aviso.
-- O padrão de consulta é **2 minutos**, configurável entre 1 e 60. Não é uma notificação instantânea: suspensão do computador, rede e economia de energia do navegador podem atrasar o aviso. O Brave precisa estar aberto.
-- Mostra os três avisos mais recentes na aba visível; avisos pendentes mais antigos reaparecem ao ignorar os recentes. Guarda no máximo 20 avisos por até 6 horas.
-- Notificações do sistema possuem dois botões: **Assistir** e **De fundo, mudo**. Fechar o aviso equivale a ignorar. O suporte a botões varia conforme o sistema operacional e suas configurações de notificações.
-- Páginas internas (`brave://`, `chrome://`), lojas de extensões, páginas de outras extensões e PDFs integrados não aceitam avisos injetados; use as notificações do sistema. Em janela anônima, só funciona se você autorizar a extensão nesse modo.
+- **Ignore:** removes the alert from all tabs without opening the stream.
+- **Background, muted:** creates an unfocused tab, mutes it before navigation, and loads the stream. Brave or the site’s autoplay policy may require you to start playback manually.
+- **Watch:** opens the stream in a new active tab.
+- The extension panel shows each channel’s last known status. It also lets you open a stream after ignoring its alert.
+- Each stream produces one alert, including across browser restarts. A new stream from the same channel produces another alert.
+- The default check interval is **2 minutes**, configurable from 1 to 60. Alerts are not instant: sleep, network issues, and browser power saving may delay checks. Brave must be open.
+- The three newest alerts appear in the visible tab. Older pending alerts reappear as newer ones are dismissed. Up to 20 alerts are retained for up to 6 hours.
+- Desktop notifications have two buttons: **Watch** and **Background, muted**. Closing one ignores the alert. Button support depends on your operating system and notification settings.
+- Internal pages (`brave://`, `chrome://`), extension stores, other extensions’ pages, and built-in PDF viewers do not support injected alerts; use desktop notifications there. Incognito windows require you to allow the extension in that mode.
 
-## Permissões e privacidade
+## Permissions and privacy
 
-`storage` guarda listas, conexão e estado; `alarms` agenda consultas; `notifications` cria avisos do sistema; `tabs` encontra abas para avisá-las e abre/silencia transmissões; `identity` permite conectar a Twitch. O script executa em páginas HTTP/HTTPS para desenhar os avisos, mas não lê nem envia o conteúdo das páginas visitadas. Os títulos dos streamers são exibidos como texto, sem interpretar HTML.
+`storage` saves lists, the connection, and status; `alarms` schedules checks; `notifications` creates desktop alerts; `tabs` finds tabs for alerts and opens or mutes streams; `identity` connects Twitch. The content script runs on HTTP/HTTPS pages to display alerts, but does not read or send the contents of visited pages. Stream titles are displayed as text, without interpreting HTML.
 
-Os únicos serviços externos consultados são `api.twitch.tv`, `id.twitch.tv` e `www.youtube.com`. Ao clicar para assistir, o Brave acessa o site correspondente normalmente. Não há analytics ou coleta em servidor próprio. A extensão não desativa Brave Shields; se a rede bloquear um serviço, o erro aparece no painel.
+The only external services queried are `api.twitch.tv`, `id.twitch.tv`, and `www.youtube.com`. When you choose to watch, Brave opens the corresponding site normally. There is no analytics or data collection on a separate server. The extension does not disable Brave Shields; blocked services produce an error in the panel.
 
-## Desenvolvimento e validação
+## Update to 1.0.1
 
-Com Node.js 20 ou superior, execute:
+Copy the new files into the **same folder** used for the previous installation, reload the extension in `brave://extensions`, and reload your tabs. Version 1.0.1 uses English throughout the interface, alerts, and error messages. Using the same folder keeps the extension ID and saved settings.
+
+## Development and validation
+
+With Node.js 20 or later, run:
 
 ```sh
 cd live-radar
 npm test
 ```
 
-Os testes cobrem reconhecimento de lives, lives agendadas, identificação do dono do canal, deduplicação, reinício do worker, erros de rede, autorização, isolamento de configurações, pausa durante consulta e ordem de abertura/silenciamento. Usam respostas simuladas e não dependem de contas ou credenciais reais.
+Tests cover live stream recognition, scheduled streams, channel ownership, deduplication, worker restarts, network errors, authorization, settings isolation, pausing during a lookup, and the order of opening and muting tabs. They use simulated responses and do not require real accounts or credentials.
 
-Para testar no navegador, carregue a pasta como extensão, use **Testar aviso** e confirme as três ações em uma página comum. Depois configure um canal que esteja realmente ao vivo e clique em **Verificar agora**. A autenticação Twitch e a detecção real do YouTube precisam dessa validação na sua instalação.
+For browser validation, load the folder as an extension, use **Test alert**, and try all three actions on a regular page. Then configure a channel that is actually live and click **Check now**. Twitch authentication and real YouTube detection require validation in your installation.
 
-### Validação neste ambiente
+### Validation in this environment
 
-Os testes automatizados passaram. A interface de configurações, o popup e os três botões dos avisos foram exercitados em Chromium com as APIs da extensão simuladas. A política administrativa do Chromium deste ambiente bloqueia extensões sem compactação; a instalação completa da extensão não pôde ser verificada aqui. A rede do ambiente também bloqueou a consulta pública ao YouTube. Não foi realizada autenticação com uma conta Twitch nem confirmada a detecção de uma transmissão real. Essas verificações precisam ser concluídas no Brave do usuário.
+Automated tests passed. The settings page, popup, and three alert buttons were exercised in Chromium with simulated extension APIs. This environment’s Chromium policy blocks unpacked extensions, so a complete extension installation could not be verified here. The environment’s network also blocked public YouTube requests. No Twitch account authentication or real live stream detection was verified. Complete those checks in your Brave installation.

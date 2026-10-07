@@ -3,15 +3,15 @@ export const INTERVAL_MINUTES = 2;
 const RESERVED = new Set(['directory', 'downloads', 'jobs', 'p', 'search', 'settings', 'subscriptions', 'turbo', 'videos', 'wallet', 'inventory', 'drops', 'friends', 'messages', 'collections', 'products', 'login', 'signup', 'activate', 'store', 'checkout', 'moderator', 'dashboard', 'broadcast', 'creatorcamp']);
 
 export function normalizeChannel(value) {
-  if (typeof value !== 'string') throw new Error('Informe o login ou link de um canal da Twitch.');
+  if (typeof value !== 'string') throw new Error('Enter a Twitch channel login or URL.');
   let name = value.trim();
   if (/^https?:\/\//i.test(name)) {
     const url = new URL(name);
-    if (!['twitch.tv', 'www.twitch.tv'].includes(url.hostname)) throw new Error('Use um link da Twitch.');
+    if (!['twitch.tv', 'www.twitch.tv'].includes(url.hostname)) throw new Error('Use a Twitch URL.');
     name = url.pathname.split('/').filter(Boolean)[0] || '';
   }
   name = name.replace(/^@/, '').toLowerCase();
-  if (!/^[a-z0-9_]{1,25}$/.test(name) || RESERVED.has(name)) throw new Error('Canal inválido. Exemplo: alanzoka');
+  if (!/^[a-z0-9_]{1,25}$/.test(name) || RESERVED.has(name)) throw new Error('Invalid channel. Example: alanzoka');
   return name;
 }
 
@@ -28,7 +28,7 @@ export function channelFromURL(value) {
 export function addPin(pins, value, now = Date.now()) {
   const login = normalizeChannel(value);
   if (pins.some(pin => pin.login === login)) return pins;
-  if (pins.length >= MAX_PINS) throw new Error(`Você pode fixar até ${MAX_PINS} canais.`);
+  if (pins.length >= MAX_PINS) throw new Error(`You can pin up to ${MAX_PINS} channels.`);
   return [{ login, displayName: login, pinnedAt: now }, ...pins];
 }
 
@@ -43,7 +43,7 @@ export function movePin(pins, login, direction) {
 }
 
 export function channelStatus(user, now = Date.now()) {
-  if (!Object.hasOwn(user, 'stream') || (user.stream !== null && (typeof user.stream !== 'object' || Array.isArray(user.stream)))) throw new Error('A Twitch não informou um estado válido para o canal.');
+  if (!Object.hasOwn(user, 'stream') || (user.stream !== null && (typeof user.stream !== 'object' || Array.isArray(user.stream)))) throw new Error('Twitch did not return a valid channel status.');
   return {
     displayName: user.displayName || user.login, avatar: user.profileImageURL || '',
     title: user.broadcastSettings?.title || '', online: Boolean(user.stream), checkedAt: now, error: '',

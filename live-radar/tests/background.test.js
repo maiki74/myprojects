@@ -29,7 +29,7 @@ const config = () => ({ ...DEFAULT_SETTINGS, twitch: ['example'], twitchClientId
 const live = id => ({ data: [{ id, user_login: 'example', user_name: 'Example', title: 'Live', type: 'live' }] });
 const response = data => new Response(JSON.stringify(data), { status: 200, headers: { 'Content-Type': 'application/json' } });
 
-test('monitoramento Twitch notifica uma vez por transmissão e sobrevive à reinicialização do worker', async () => {
+test('Twitch monitoring notifies once per stream and survives worker restarts', async () => {
   let session = 'one';
   const h = await setup({ settings: config(), twitchValidatedAt: Date.now() }, async () => response(live(session)));
   assert.equal((await h.send('CHECK_NOW')).ok, true);
@@ -42,14 +42,14 @@ test('monitoramento Twitch notifica uma vez por transmissão e sobrevive à rein
   await restarted.send('CHECK_NOW');
   assert.equal(restarted.calls.filter(item => item[0] === 'notification').length, 0);
 });
-test('erros de rede preservam o estado anterior e aparecem no diagnóstico', async () => {
+test('network errors preserve the previous status and appear in diagnostics', async () => {
   const state = { 'twitch:example': { online: true, session: 'one' } };
   const h = await setup({ settings: config(), twitchValidatedAt: Date.now(), channelState: state }, async () => new Response('', { status: 401 }));
   await h.send('CHECK_NOW');
   assert.deepEqual(h.data.channelState, state);
-  assert.match(h.data.errors[0], /Conexão expirada/);
+  assert.match(h.data.errors[0], /Connection expired/);
 });
-test('a aba é silenciada antes de navegar e não ganha foco na opção de fundo', async () => {
+test('background playback mutes the tab before navigation without focusing it', async () => {
   const item = { id: 'notice', url: 'https://www.twitch.tv/example' };
   const h = await setup({ pending: [item] });
   assert.equal((await h.send('OPEN', { id: 'notice', muted: true }, 'https://example.org/')).ok, true);
@@ -60,20 +60,20 @@ test('a aba é silenciada antes de navegar e não ganha foco na opção de fundo
   ]);
   assert.deepEqual(h.data.pending, []);
 });
-test('assistir abre uma aba ativa e ignorar não abre abas', async () => {
+test('watch opens an active tab and ignore opens no tabs', async () => {
   const h = await setup({ pending: [{ id: 'one', url: 'https://www.twitch.tv/example' }, { id: 'two' }] });
   await h.send('DISMISS', { id: 'two' });
   assert.equal(h.calls.filter(item => item[0] === 'tab-create').length, 0);
   await h.send('OPEN', { id: 'one', muted: false });
   assert.deepEqual(h.calls.find(item => item[0] === 'tab-create')[1], { url: 'about:blank', active: true });
 });
-test('avisos ignorados podem ser abertos depois pelo painel de lives', async () => {
+test('ignored alerts can still be opened from the live panel', async () => {
   const item = { platform: 'twitch', channel: 'example', session: 'one', url: 'https://www.twitch.tv/example' };
   const h = await setup({ channelState: { 'twitch:example': { online: true, live: item } }, pending: [] });
   assert.equal((await h.send('OPEN_LIVE', { platform: 'twitch', channel: 'example' })).ok, true);
   assert.equal(h.calls.filter(item => item[0] === 'tab-create').length, 1);
 });
-test('scripts das páginas não recebem token nem podem alterar configurações', async () => {
+test('page scripts cannot obtain tokens or change settings', async () => {
   const h = await setup({ settings: config() });
   assert.equal((await h.send('GET_STATUS', {}, 'https://example.org')).ok, false);
   assert.equal((await h.send('SAVE_SETTINGS', { settings: DEFAULT_SETTINGS }, 'https://example.org')).ok, false);
@@ -81,7 +81,7 @@ test('scripts das páginas não recebem token nem podem alterar configurações'
   assert.equal('twitchToken' in result.data.settings, false);
   assert.equal(result.data.connected, true);
 });
-test('pausar durante uma consulta impede um aviso atrasado', async () => {
+test('pausing during a lookup prevents a delayed alert', async () => {
   let release;
   const started = new Promise(resolve => { release = resolve; });
   let resolveRequest;
@@ -93,26 +93,26 @@ test('pausar durante uma consulta impede um aviso atrasado', async () => {
   await check;
   assert.equal(h.calls.filter(item => item[0] === 'notification').length, 0);
 });
-test('fechar a notificação do sistema ignora o aviso nas abas', async () => {
+test('closing a desktop notification dismisses the alert in all tabs', async () => {
   const h = await setup({ pending: [{ id: 'notice' }] });
   h.listeners.closed('notice', true);
   await new Promise(resolve => setImmediate(resolve));
   assert.deepEqual(h.data.pending, []);
 });
-test('autenticação valida o token e salva a conexão localmente', async () => {
+test('authentication validates the token and saves the connection locally', async () => {
   const h = await setup({ settings: { ...config(), twitch: [], twitchToken: '' } }, async () => response({ client_id: 'client1234' }));
   assert.equal((await h.send('CONNECT_TWITCH')).ok, true);
   assert.equal(h.data.settings.twitchToken, 'oauth-token');
   assert.ok(h.data.twitchValidatedAt);
 });
-test('consultas YouTube identificam a live e não duplicam o aviso', async () => {
+test('YouTube lookups identify live streams without duplicate alerts', async () => {
   const player = { videoDetails: { videoId: 'abcdefghijk', author: 'Example', title: 'YouTube live' }, microformat: { playerMicroformatRenderer: { ownerProfileUrl: 'https://www.youtube.com/@example', liveBroadcastDetails: { isLiveNow: true } } } };
   const h = await setup({ settings: { ...DEFAULT_SETTINGS, youtube: ['@example'] } }, async () => new Response('var ytInitialPlayerResponse = ' + JSON.stringify(player) + ';'));
   await h.send('CHECK_NOW'); await h.send('CHECK_NOW');
   assert.equal(h.data.channelState['youtube:@example'].online, true);
   assert.equal(h.calls.filter(item => item[0] === 'notification').length, 1);
 });
-test('YouTube com aba de lives consulta o player e confirma o dono do canal', async () => {
+test('YouTube live tabs check the player and confirm channel ownership', async () => {
   const channelId = 'UC' + 'a'.repeat(22);
   const data = { metadata: { channelMetadataRenderer: { externalId: channelId } }, contents: { twoColumnBrowseResultsRenderer: { tabs: [{ tabRenderer: { selected: true, content: { videoRenderer: { videoId: 'abcdefghijk', badges: [{ metadataBadgeRenderer: { style: 'BADGE_STYLE_TYPE_LIVE_NOW' } }] } } } }] } } };
   const player = { videoDetails: { videoId: 'abcdefghijk', channelId, author: 'Example' }, microformat: { playerMicroformatRenderer: { liveBroadcastDetails: { isLiveNow: true } } } };
@@ -126,7 +126,7 @@ test('YouTube com aba de lives consulta o player e confirma o dono do canal', as
   assert.equal(h.data.channelState['youtube:@example'].online, true);
   assert.equal(h.data.errors.length, 0);
 });
-test('YouTube resolve o @ pela página do canal se o player só informar o ID', async () => {
+test('YouTube resolves the handle from the channel page when the player only provides its ID', async () => {
   const channelId = 'UC' + 'a'.repeat(22);
   const player = { videoDetails: { videoId: 'abcdefghijk', channelId, author: 'Example' }, microformat: { playerMicroformatRenderer: { ownerProfileUrl: 'https://www.youtube.com/channel/' + channelId, liveBroadcastDetails: { isLiveNow: true } } } };
   const data = { metadata: { channelMetadataRenderer: { externalId: channelId } } };

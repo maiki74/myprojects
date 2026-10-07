@@ -8,11 +8,11 @@ export function normalizeTwitch(value) {
   let name = raw;
   if (/^https?:\/\//i.test(raw)) {
     const url = new URL(raw);
-    if (!['twitch.tv', 'www.twitch.tv'].includes(url.hostname)) throw new Error('Use um canal da Twitch.');
+    if (!['twitch.tv', 'www.twitch.tv'].includes(url.hostname)) throw new Error('Use a Twitch channel.');
     name = url.pathname.split('/').filter(Boolean)[0] || '';
   }
   name = name.replace(/^@/, '').toLowerCase();
-  if (!/^[a-z0-9_]{1,25}$/.test(name)) throw new Error('Login da Twitch inválido. Exemplo: alanzoka');
+  if (!/^[a-z0-9_]{1,25}$/.test(name)) throw new Error('Invalid Twitch login. Example: alanzoka');
   return name;
 }
 
@@ -20,14 +20,14 @@ export function normalizeYouTube(value) {
   let name = value.trim();
   if (/^https?:\/\//i.test(name)) {
     const url = new URL(name);
-    if (!['youtube.com', 'www.youtube.com', 'm.youtube.com'].includes(url.hostname)) throw new Error('Use um canal do YouTube.');
+    if (!['youtube.com', 'www.youtube.com', 'm.youtube.com'].includes(url.hostname)) throw new Error('Use a YouTube channel.');
     const path = decodeURIComponent(url.pathname).split('/').filter(Boolean);
-    if (path[0] !== 'channel' && !path[0]?.startsWith('@')) throw new Error('Use o link de um canal, não o link de um vídeo.');
+    if (path[0] !== 'channel' && !path[0]?.startsWith('@')) throw new Error('Use a channel URL, rather than a video URL.');
     name = path[0] === 'channel' ? path[1] || '' : path[0] || '';
   }
   if (/^UC[a-zA-Z0-9_-]{22}$/.test(name)) return name;
   name = name.startsWith('@') ? name : '@' + name;
-  if (!/^@[\p{L}\p{N}_.\-·]{3,30}$/u.test(name)) throw new Error('Use o @identificador ou a URL /channel/UC… do canal.');
+  if (!/^@[\p{L}\p{N}_.\-·]{3,30}$/u.test(name)) throw new Error('Use the channel @handle or /channel/UC… URL.');
   return name.toLowerCase();
 }
 
@@ -38,15 +38,15 @@ export function youtubeLiveURL(channel) {
 export function validateSettings(input, previous = DEFAULT_SETTINGS) {
   const settings = { ...DEFAULT_SETTINGS, ...previous };
   for (const [key, normalize] of [['twitch', normalizeTwitch], ['youtube', normalizeYouTube]]) {
-    if (!Array.isArray(input[key]) || input[key].length > 100) throw new Error('O limite é de 100 canais por plataforma.');
+    if (!Array.isArray(input[key]) || input[key].length > 100) throw new Error('The limit is 100 channels per platform.');
     settings[key] = [...new Set(input[key].map(normalize))];
   }
   const interval = Number(input.intervalMinutes);
-  if (!Number.isFinite(interval) || interval < 1 || interval > 60) throw new Error('Use um intervalo entre 1 e 60 minutos.');
+  if (!Number.isFinite(interval) || interval < 1 || interval > 60) throw new Error('Use an interval between 1 and 60 minutes.');
   settings.intervalMinutes = interval;
   for (const key of ['inPage', 'desktop', 'enabled']) settings[key] = Boolean(input[key]);
   settings.twitchClientId = String(input.twitchClientId || '').trim();
-  if (settings.twitchClientId && !/^[a-zA-Z0-9]{8,100}$/.test(settings.twitchClientId)) throw new Error('Client ID da Twitch inválido.');
+  if (settings.twitchClientId && !/^[a-zA-Z0-9]{8,100}$/.test(settings.twitchClientId)) throw new Error('Invalid Twitch Client ID.');
   if (settings.twitchClientId !== previous.twitchClientId) settings.twitchToken = '';
   return settings;
 }
@@ -99,33 +99,33 @@ export function parseYouTubeLive(html, channel, resolvedChannelId = null) {
   const player = extractJSON(html, 'ytInitialPlayerResponse');
   if (!player) {
     if (extractJSON(html, 'ytInitialData')) return null;
-    throw new Error('O YouTube não forneceu os dados do canal (bloqueio, consentimento ou mudança de página).');
+    throw new Error('YouTube did not provide channel data (access blocked, consent required, or page format changed).');
   }
   const details = player.videoDetails || {};
   const micro = player.microformat?.playerMicroformatRenderer || {};
   const live = micro.liveBroadcastDetails;
   if (live?.isLiveNow !== true) {
     if (['ERROR', 'LOGIN_REQUIRED', 'UNPLAYABLE'].includes(player.playabilityStatus?.status)) {
-      throw new Error('Não foi possível confirmar este canal: ' + (player.playabilityStatus.reason || 'vídeo indisponível'));
+      throw new Error('Could not verify this channel: ' + (player.playabilityStatus.reason || 'video unavailable'));
     }
     return null;
   }
   if (channel.startsWith('UC') || resolvedChannelId) {
-    if (details.channelId !== (resolvedChannelId || channel)) throw new Error('O YouTube retornou uma transmissão de outro canal.');
+    if (details.channelId !== (resolvedChannelId || channel)) throw new Error('YouTube returned a stream from a different channel.');
   } else {
     const owner = micro.ownerProfileUrl || '';
     let ownerPath = '';
     try { ownerPath = decodeURIComponent(new URL(owner).pathname).replace(/\/$/, '').toLowerCase(); } catch {}
     if (ownerPath !== '/' + channel.toLowerCase()) {
-      const error = new Error('O YouTube não confirmou o identificador do dono da transmissão. Use a URL /channel/UC… para este canal.');
+      const error = new Error('YouTube could not confirm the stream owner. Use the /channel/UC… URL for this channel.');
       error.code = 'YOUTUBE_OWNER_UNCONFIRMED';
       throw error;
     }
   }
-  if (!/^[a-zA-Z0-9_-]{11}$/.test(details.videoId || '')) throw new Error('ID da transmissão inválido.');
+  if (!/^[a-zA-Z0-9_-]{11}$/.test(details.videoId || '')) throw new Error('Invalid stream ID.');
   return {
     platform: 'youtube', channel, session: details.videoId,
-    name: details.author || channel, title: details.title || 'Ao vivo no YouTube',
+    name: details.author || channel, title: details.title || 'Live on YouTube',
     url: 'https://www.youtube.com/watch?v=' + details.videoId
   };
 }

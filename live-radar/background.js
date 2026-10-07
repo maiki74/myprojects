@@ -13,7 +13,7 @@ async function settings() {
 }
 async function request(url, options = {}) {
   const response = await fetch(url, { ...options, credentials: 'omit', cache: 'no-store', signal: AbortSignal.timeout(15000) });
-  if (!response.ok) throw new Error(response.status === 401 ? 'Conexão expirada. Conecte a Twitch novamente.' : `Serviço respondeu HTTP ${response.status}.`);
+  if (!response.ok) throw new Error(response.status === 401 ? 'Connection expired. Reconnect Twitch.' : `Service returned HTTP ${response.status}.`);
   return response;
 }
 async function schedule() {
@@ -36,13 +36,13 @@ async function addNotification(live, config) {
   if (config.desktop) {
     try {
       await chrome.notifications.create(id, {
-        type: 'basic', iconUrl: 'icons/icon128.png', title: `${live.name} entrou ao vivo`,
+        type: 'basic', iconUrl: 'icons/icon128.png', title: `${live.name} is live`,
         message: live.title + '\n' + (live.platform === 'twitch' ? 'Twitch' : 'YouTube'),
-        buttons: [{ title: 'Assistir' }, { title: 'De fundo, mudo' }], priority: 1
+        buttons: [{ title: 'Watch' }, { title: 'Background, muted' }], priority: 1
       });
       await chrome.storage.local.set({ notificationError: '' });
     } catch (error) {
-      await chrome.storage.local.set({ notificationError: 'Notificação do sistema: ' + error.message });
+      await chrome.storage.local.set({ notificationError: 'Desktop notification: ' + error.message });
     }
   }
 }
@@ -71,23 +71,23 @@ async function doCheck() {
   };
   if (config.twitch.length) {
     try {
-      if (!config.twitchClientId || !config.twitchToken) throw new Error('Adicione o Client ID e conecte sua conta da Twitch nas configurações.');
+      if (!config.twitchClientId || !config.twitchToken) throw new Error('Add your Client ID and connect your Twitch account in settings.');
       // Twitch requires token validation on startup and once per hour.
       const { twitchValidatedAt = 0 } = await chrome.storage.local.get('twitchValidatedAt');
       if (Date.now() - twitchValidatedAt > 3600000) {
         const validation = await (await request('https://id.twitch.tv/oauth2/validate', { headers: { Authorization: 'OAuth ' + config.twitchToken } })).json();
-        if (validation.client_id !== config.twitchClientId) throw new Error('O token não pertence a este Client ID. Conecte novamente.');
+        if (validation.client_id !== config.twitchClientId) throw new Error('The token does not belong to this Client ID. Reconnect Twitch.');
         await chrome.storage.local.set({ twitchValidatedAt: Date.now() });
       }
       const params = new URLSearchParams({ first: '100' });
       config.twitch.forEach(login => params.append('user_login', login));
       const body = await (await request('https://api.twitch.tv/helix/streams?' + params, { headers: { 'Client-ID': config.twitchClientId, Authorization: 'Bearer ' + config.twitchToken } })).json();
-      if (!Array.isArray(body.data)) throw new Error('Resposta inesperada da Twitch.');
+      if (!Array.isArray(body.data)) throw new Error('Unexpected Twitch response.');
       for (const channel of config.twitch) {
         const stream = body.data.find(item => item.user_login.toLowerCase() === channel);
         await apply('twitch', channel, stream ? {
           platform: 'twitch', channel, session: stream.id, name: stream.user_name,
-          title: stream.title || 'Ao vivo na Twitch', url: 'https://www.twitch.tv/' + channel
+          title: stream.title || 'Live on Twitch', url: 'https://www.twitch.tv/' + channel
         } : null);
       }
     } catch (error) { errors.push('Twitch: ' + error.message); }
@@ -111,7 +111,7 @@ async function doCheck() {
         // Some channels show a live tab instead of redirecting straight to the player.
         if (!live && info.liveVideoId) {
           const expectedId = channel.startsWith('UC') ? channel : info.channelId;
-          if (!expectedId) throw new Error('Não foi possível confirmar o ID do canal. Use a URL /channel/UC… .');
+          if (!expectedId) throw new Error('Could not confirm the channel ID. Use its /channel/UC… URL.');
           const watchHTML = await (await request('https://www.youtube.com/watch?v=' + info.liveVideoId)).text();
           live = parseYouTubeLive(watchHTML, channel, expectedId);
         }
@@ -137,33 +137,33 @@ async function dismiss(id, clear = true) {
 async function openNotification(id, muted) {
   const { pending = [] } = await chrome.storage.local.get('pending');
   const item = pending.find(entry => entry.id === id);
-  if (!item) throw new Error('Este aviso não está mais disponível.');
+  if (!item) throw new Error('This alert is no longer available.');
   await openStream(item.url, muted);
   await dismiss(id);
 }
 async function openStream(url, muted) {
-  if (!safeStreamURL(url)) throw new Error('Endereço da transmissão inválido.');
+  if (!safeStreamURL(url)) throw new Error('Invalid stream URL.');
   const tab = await chrome.tabs.create({ url: 'about:blank', active: !muted });
   if (muted) await chrome.tabs.update(tab.id, { muted: true });
   await chrome.tabs.update(tab.id, { url });
 }
 async function connectTwitch() {
   const config = await settings();
-  if (!config.twitchClientId) throw new Error('Salve seu Client ID antes de conectar.');
+  if (!config.twitchClientId) throw new Error('Save your Client ID before connecting.');
   const state = crypto.randomUUID();
   const redirect = chrome.identity.getRedirectURL('twitch');
   const url = new URL('https://id.twitch.tv/oauth2/authorize');
   url.search = new URLSearchParams({ client_id: config.twitchClientId, redirect_uri: redirect, response_type: 'token', state, scope: '', force_verify: 'true' });
   const callback = await chrome.identity.launchWebAuthFlow({ url: url.href, interactive: true });
-  if (!callback || new URL(callback).origin !== new URL(redirect).origin || new URL(callback).pathname !== new URL(redirect).pathname) throw new Error('Resposta de autenticação inválida.');
+  if (!callback || new URL(callback).origin !== new URL(redirect).origin || new URL(callback).pathname !== new URL(redirect).pathname) throw new Error('Invalid authentication response.');
   const params = new URLSearchParams(new URL(callback).hash.slice(1));
-  if (params.get('state') !== state || !params.get('access_token')) throw new Error('Conexão cancelada ou não autorizada.');
+  if (params.get('state') !== state || !params.get('access_token')) throw new Error('Connection canceled or not authorized.');
   const token = params.get('access_token');
   const validation = await (await request('https://id.twitch.tv/oauth2/validate', { headers: { Authorization: 'OAuth ' + token } })).json();
-  if (validation.client_id !== config.twitchClientId) throw new Error('Client ID não corresponde à conexão.');
+  if (validation.client_id !== config.twitchClientId) throw new Error('Client ID does not match the connection.');
   await mutate(async () => {
     const current = await settings();
-    if (current.twitchClientId !== config.twitchClientId) throw new Error('O Client ID mudou durante a conexão. Tente novamente.');
+    if (current.twitchClientId !== config.twitchClientId) throw new Error('Client ID changed while connecting. Try again.');
     await chrome.storage.local.set({ settings: { ...current, twitchToken: token }, twitchValidatedAt: Date.now() });
     configurationVersion++;
   });
@@ -178,11 +178,11 @@ async function handle(message, sender) {
   if (message.type === 'DISMISS') return dismiss(message.id);
   if (message.type === 'OPEN') return openNotification(message.id, Boolean(message.muted));
   const privileged = sender.url?.startsWith(chrome.runtime.getURL(''));
-  if (!privileged) throw new Error('Ação indisponível nesta página.');
+  if (!privileged) throw new Error('This action is unavailable on this page.');
   if (message.type === 'OPEN_LIVE') {
     const { channelState = {} } = await chrome.storage.local.get('channelState');
     const item = channelState[`${message.platform}:${message.channel}`];
-    if (!item?.online || !item.live) throw new Error('Esta transmissão não está mais disponível.');
+    if (!item?.online || !item.live) throw new Error('This stream is no longer available.');
     await openStream(item.live.url, Boolean(message.muted));
     await dismiss(`${item.live.platform}:${item.live.channel}:${item.live.session}`);
     return;
@@ -221,12 +221,12 @@ async function handle(message, sender) {
   if (message.type === 'CHECK_NOW') return checkNow();
   if (message.type === 'TEST_NOTIFICATION') {
     const config = await settings();
-    await addNotification({ platform: 'twitch', channel: 'twitch', session: 'test-' + Date.now(), name: 'Live Radar · teste', title: 'Seus avisos estão prontos. Este teste abre o canal Twitch.', url: 'https://www.twitch.tv/twitch', test: true }, config);
+    await addNotification({ platform: 'twitch', channel: 'twitch', session: 'test-' + Date.now(), name: 'Live Radar · test', title: 'Your alerts are ready. This test opens the Twitch channel.', url: 'https://www.twitch.tv/twitch', test: true }, config);
     await broadcast();
     return;
   }
   if (message.type === 'OPEN_OPTIONS') return chrome.runtime.openOptionsPage();
-  throw new Error('Ação desconhecida.');
+  throw new Error('Unknown action.');
 }
 chrome.runtime.onMessage.addListener((message, sender, respond) => {
   handle(message, sender).then(data => respond({ ok: true, data }), error => respond({ ok: false, error: error.message }));

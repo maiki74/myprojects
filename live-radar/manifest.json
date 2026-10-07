@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Live Radar — Twitch e YouTube",
-  "version": "1.0.0",
-  "description": "Avise quando seus streamers entrarem ao vivo e escolha ignorar, abrir sem áudio ou assistir.",
+  "name": "Live Radar — Twitch & YouTube",
+  "version": "1.0.1",
+  "description": "Get alerts when your streamers go live and choose to ignore, open muted in the background, or watch.",
   "permissions": ["storage", "alarms", "notifications", "tabs", "identity"],
   "host_permissions": ["https://api.twitch.tv/*", "https://id.twitch.tv/*", "https://www.youtube.com/*"],
   "background": { "service_worker": "background.js", "type": "module" },

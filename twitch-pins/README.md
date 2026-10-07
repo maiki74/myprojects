@@ -1,52 +1,52 @@
-# Twitch Pins para Brave
+# Twitch Pins for Brave
 
-Extensão separada da Live Radar. Adiciona uma seção **FIXADOS** acima dos canais seguidos na barra lateral da Twitch, inclusive na página inicial. Permite experimentar um streamer antes de decidir seguir. Não executa seguir, deixar de seguir, inscrever-se ou cancelar inscrição.
+An extension separate from Live Radar. It adds a **PINNED** section above followed channels in the Twitch sidebar, including on the homepage. Try a streamer before deciding to follow. The extension does not follow, unfollow, subscribe, or unsubscribe.
 
-## Instalar
+## Install
 
-1. Extraia `twitch-pins.zip`.
-2. Abra `brave://extensions` e ative **Modo do desenvolvedor**.
-3. Clique em **Carregar sem compactação** e escolha a pasta `twitch-pins`, que contém o manifesto desta extensão. A extensão Live Radar fica na pasta separada `live-radar`.
-4. Recarregue as abas abertas da Twitch. Fixe o ícone **Twitch Pins** na barra do Brave.
+1. Extract `twitch-pins.zip`, or download and extract this repository.
+2. Open `brave://extensions` and enable **Developer mode**.
+3. Click **Load unpacked** and select the `twitch-pins` folder containing this extension’s manifest. Live Radar lives in the separate `live-radar` folder.
+4. Reload your open Twitch tabs. Pin **Twitch Pins** to the Brave toolbar.
 
-Não precisa de pacotes, compilação, conta de desenvolvedor, chave de API nem autorização de login. A pasta deve permanecer no disco enquanto a extensão estiver instalada.
+No packages, build step, developer account, API key, or login authorization are required. Keep the extension folder on disk while it is installed.
 
-## Usar
+## Usage
 
-- Abra um canal da Twitch. O botão com **ícone de alfinete**, sem texto, aparece alinhado na mesma linha das ações **Seguir/Inscrever-se**, quando o layout da Twitch permite. Clique para fixar; o alfinete fica destacado. Clique novamente para desafixar. O nome da ação aparece ao passar o mouse e fica disponível para leitores de tela.
-- Se o cabeçalho não for reconhecido, o mesmo botão aparece no canto inferior direito da página do canal.
-- Os fixados aparecem antes dos seguidos na barra lateral. Clique no canal para abri-lo ou em **×** para desafixar. A lista mantém a ordem escolhida, com novos fixados no topo.
-- Use o **olhinho** no título da seção para recolher ou expandir os fixados. A preferência fica salva e acompanha as outras abas. Recolher não remove os canais, e o olhinho continua disponível com a barra lateral estreita.
-- Abra o ícone da extensão ou a engrenagem da seção para adicionar um canal pelo login/link e usar **↑ / ↓** para organizar a lista.
-- Na barra lateral recolhida, os fixados aparecem como avatares; passe o mouse para ver nome e estado. Em telas sem barra lateral, use o painel da extensão.
-- Aceita até **50 canais**. A lista fica salva localmente, persiste entre reinicializações e é atualizada nas outras abas da Twitch. Não é sincronizada entre dispositivos ou perfis do navegador.
+- Open a Twitch channel. A button with a **pin icon**, without text, appears aligned with the **Follow/Subscribe** actions when the Twitch layout allows it. Click to pin; the pin becomes highlighted. Click again to unpin. Its action appears on hover and is available to screen readers.
+- If the header is not recognized, the same button appears in the bottom-right corner of the channel page.
+- Pinned channels appear above followed channels in the sidebar. Click a channel to open it or **×** to unpin. The list keeps your chosen order, with new pins at the top.
+- Use the **eye button** in the section heading to collapse or expand your pins. This preference is saved and synced across your open tabs. Collapsing the list keeps your pins, and the eye button remains available in the narrow sidebar.
+- Open the extension icon or the section’s gear button to add a channel by login or URL and use **↑ / ↓** to reorder the list.
+- In the collapsed sidebar, pins appear as avatars; hover to see the name and status. Use the extension panel on pages without a sidebar.
+- Supports up to **50 channels**. The list is stored locally, persists across browser restarts, and updates in other Twitch tabs. It is not synced across devices or browser profiles.
 
 ## Status
 
-Consulta os canais a cada **2 minutos**, enquanto o Brave está aberto, e mostra **Ao vivo**, **Offline**, **Verificando** ou **Status indisponível**. Nos canais ao vivo, a barra lateral mostra a **quantidade de espectadores**, o **jogo/categoria** e o **título da live**. Textos longos são cortados com reticências, e o conteúdo completo aparece ao passar o mouse. Esses dados também aparecem no painel. O ícone da extensão exibe a quantidade de canais com estado confirmado ao vivo.
+Checks channels every **2 minutes** while Brave is open and shows **Live**, **Offline**, **Checking**, or **Status unavailable**. For live channels, the sidebar shows the **viewer count**, **game/category**, and **stream title**. Long text is shortened with an ellipsis, and the full text appears on hover. These details also appear in the panel. The extension badge shows the number of channels confirmed live.
 
-Guarda apenas o estado atual dos canais. Erros de rede não tornam um canal automaticamente offline: a interface sinaliza indisponibilidade e mantém o último estado conhecido.
+Only the current channel status is stored. Network errors do not automatically make a channel offline: the interface shows that status is unavailable and keeps the last known result.
 
-## Atualizar para 1.2.1
+## Update to 1.2.2
 
-Extraia os arquivos novos sobre a **mesma pasta** usada na instalação anterior, clique em **Recarregar** no cartão da extensão em `brave://extensions` e recarregue as abas da Twitch. Usar a mesma pasta mantém o identificador da extensão e os canais salvos. A versão 1.2.1 mantém os textos dentro da barra lateral e do painel, usa reticências nos textos longos e abrevia números grandes de espectadores. Passe o mouse para ver os valores e textos completos. O olhinho, os fixados e sua ordem são preservados.
+Copy the new files into the **same folder** used for the previous installation, click **Reload** on the extension card in `brave://extensions`, and reload your Twitch tabs. Using the same folder keeps the extension ID and saved channels. Version 1.2.2 uses English for labels, tooltips, messages, and number formatting. It retains the overflow fix from 1.2.1: text stays inside the sidebar and panel, long text uses an ellipsis, and large viewer counts are abbreviated. Hover to see full values and text. Your pins, their order, and the eye button preference are preserved.
 
-## Compatibilidade e privacidade
+## Compatibility and privacy
 
-A lista e os botões são desenhados por scripts restritos a `twitch.tv`. `storage` salva os fixados, o estado atual e a preferência do olhinho; `alarms` agenda consultas. A permissão de rede para `gql.twitch.tv` permite consultas **somente de leitura** ao endpoint usado pelo site público da Twitch, com o identificador público do próprio site. Esse identificador não é uma senha nem um token pessoal. A extensão não extrai cookies, intercepta credenciais, solicita escopos de conta, modifica seguidores ou envia dados para um servidor próprio.
+The list and buttons are rendered by scripts restricted to `twitch.tv`. `storage` saves pins, current status, and the eye button preference; `alarms` schedules checks. Network permission for `gql.twitch.tv` allows **read-only** requests to the endpoint used by Twitch’s public website, using the website’s public identifier. That identifier is not a password or a personal token. The extension does not extract cookies, intercept credentials, request account scopes, change followers, or send data to a separate server.
 
-O endpoint do site é **não oficial para extensões** e pode mudar ou bloquear consultas. Alterações no layout também podem exigir manutenção dos seletores da barra lateral e dos botões. Fixar/desafixar e organizar continuam funcionando localmente caso o serviço de status falhe. Não desative Brave Shields para usar a extensão; consulte os erros exibidos no painel.
+The website endpoint is **unofficial for extensions** and may change or block requests. Layout changes may also require updates to sidebar and button selectors. Pinning, unpinning, and reordering continue to work locally if the status service fails. Do not disable Brave Shields to use the extension; check errors in the panel.
 
-## Desenvolvimento e validação
+## Development and validation
 
-Na pasta `twitch-pins`, com Node.js 20+ (não é necessário instalar dependências):
+In the `twitch-pins` folder, with Node.js 20 or later and no dependency installation:
 
 ```sh
 npm test
 ```
 
-Os testes de Twitch Pins verificam normalização de canais, limite e ordem da lista, persistência do olhinho, migração sem perda de fixados, consultas, erros de rede e alterações durante uma consulta. Não dependem de contas reais.
+Tests cover channel normalization, list limits and order, eye button persistence, migration without losing pins, lookups, network errors, and changes made during a lookup. They do not require real accounts.
 
-Para validar no Brave, abra um canal, use o alfinete, volte à página inicial e confirme sua posição acima dos seguidos. Teste o olhinho, sua persistência depois de recarregar, desafixar, organizar pelo painel, recolher a barra lateral e navegar entre canais sem recarregar a página. Fixe um canal realmente ao vivo e outro offline e use **Atualizar** para confirmar os status.
+To validate in Brave, open a channel, use the pin, return to the homepage, and confirm it appears above followed channels. Test the eye button and its persistence after reloading, unpinning, panel reordering, collapsing the sidebar, and navigating between channels without a full page reload. Pin a channel that is actually live and another that is offline, then use **Refresh** to confirm their status.
 
-O Chromium da máquina de desenvolvimento bloqueia carregar extensões por política administrativa e a rede bloqueia `gql.twitch.tv`. A integração com a Twitch real precisa ser conferida na instalação do usuário. Os testes no navegador usam uma página representativa da Twitch e APIs simuladas; não comprovam compatibilidade com todas as variantes atuais do site.
+The development machine’s Chromium policy blocks extension loading, and its network blocks `gql.twitch.tv`. Real Twitch integration must be checked in your installation. Browser tests use a representative Twitch page and simulated APIs; they do not establish compatibility with every current version of the site. Layout checks include very long titles and category names, large viewer counts, and sidebar widths from 54 to 240 pixels.
