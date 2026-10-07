@@ -1,10 +1,10 @@
 {
   "manifest_version": 3,
   "name": "Live Radar — Twitch & YouTube",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "description": "Get alerts when your streamers go live and choose to ignore, open muted in the background, or watch.",
-  "permissions": ["storage", "alarms", "notifications", "tabs", "identity"],
-  "host_permissions": ["https://api.twitch.tv/*", "https://id.twitch.tv/*", "https://www.youtube.com/*"],
+  "permissions": ["storage", "alarms", "notifications", "tabs"],
+  "host_permissions": ["https://gql.twitch.tv/*", "https://www.youtube.com/*"],
   "background": { "service_worker": "background.js", "type": "module" },
   "action": { "default_popup": "popup.html", "default_title": "Live Radar", "default_icon": "icons/icon128.png" },
   "options_page": "options.html",

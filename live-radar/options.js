@@ -9,44 +9,22 @@ function status(text, error = false) { $('status').textContent = text; $('status
 function readForm() {
   const lines = id => $(id).value.split(/[\n,]+/).map(value => value.trim()).filter(Boolean);
   return {
-    twitch: lines('twitch'), youtube: lines('youtube'), twitchClientId: $('client-id').value,
+    twitch: lines('twitch'), youtube: lines('youtube'),
     enabled: $('enabled').checked, inPage: $('in-page').checked, desktop: $('desktop').checked,
     intervalMinutes: Number($('interval').value)
   };
 }
-async function load(fill = true) {
+async function load() {
   const data = await send('GET_STATUS');
   const settings = { ...DEFAULT_SETTINGS, ...data.settings };
-  if (fill) {
-    $('twitch').value = settings.twitch.join('\n');
-    $('youtube').value = settings.youtube.join('\n');
-    $('client-id').value = settings.twitchClientId;
-    for (const [id, key] of [['enabled', 'enabled'], ['in-page', 'inPage'], ['desktop', 'desktop']]) $(id).checked = settings[key];
-    $('interval').value = settings.intervalMinutes;
-  }
-  $('redirect-url').value = data.redirectURL;
-  $('connection').textContent = data.connected ? 'Connected' : 'Not connected';
-  $('connection').classList.toggle('connected', data.connected);
-  $('disconnect').hidden = !data.connected;
+  $('twitch').value = settings.twitch.join('\n');
+  $('youtube').value = settings.youtube.join('\n');
+  for (const [id, key] of [['enabled', 'enabled'], ['in-page', 'inPage'], ['desktop', 'desktop']]) $(id).checked = settings[key];
+  $('interval').value = settings.intervalMinutes;
 }
 $('settings-form').addEventListener('submit', async event => {
   event.preventDefault();
   try { await send('SAVE_SETTINGS', { settings: readForm() }); await load(); status('Settings saved.'); }
-  catch (error) { status(error.message, true); }
-});
-$('connect').addEventListener('click', async () => {
-  $('connect').disabled = true;
-  status('Waiting for Twitch authorization…');
-  try {
-    await send('SAVE_SETTINGS', { settings: readForm() });
-    await send('CONNECT_TWITCH');
-    await load(false);
-    status('Twitch connected. Monitoring started.');
-  } catch (error) { status(error.message, true); }
-  finally { $('connect').disabled = false; }
-});
-$('disconnect').addEventListener('click', async () => {
-  try { await send('DISCONNECT_TWITCH'); await load(false); status('Twitch disconnected.'); }
   catch (error) { status(error.message, true); }
 });
 $('test').addEventListener('click', async () => {

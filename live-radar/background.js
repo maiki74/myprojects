@@ -1,4 +1,8 @@
-import { DEFAULT_SETTINGS, validateSettings, youtubeLiveURL, parseYouTubeLive, parseYouTubeChannelPage, transition, safeStreamURL } from './lib.js';
+import { cleanSettings, validateSettings, parseTwitchLive, youtubeLiveURL, parseYouTubeLive, parseYouTubeChannelPage, transition, safeStreamURL } from './lib.js';
+
+// Public website identifier, not a personal token or an application secret.
+const WEBSITE_CLIENT_ID = 'kimne78kx3ncx6brgo4mv6wki5h1ko';
+const TWITCH_QUERY = 'query RadarChannel($login: String!) { user(login: $login) { login displayName broadcastSettings { title } stream { id } } }';
 
 let checkInFlight;
 let configurationVersion = 0;
@@ -9,11 +13,11 @@ function mutate(fn) {
   return result;
 }
 async function settings() {
-  return { ...DEFAULT_SETTINGS, ...(await chrome.storage.local.get('settings')).settings };
+  return cleanSettings((await chrome.storage.local.get('settings')).settings);
 }
 async function request(url, options = {}) {
   const response = await fetch(url, { ...options, credentials: 'omit', cache: 'no-store', signal: AbortSignal.timeout(15000) });
-  if (!response.ok) throw new Error(response.status === 401 ? 'Connection expired. Reconnect Twitch.' : `Service returned HTTP ${response.status}.`);
+  if (!response.ok) throw new Error(`Service returned HTTP ${response.status}.`);
   return response;
 }
 async function schedule() {
@@ -69,26 +73,17 @@ async function doCheck() {
     state[key] = { ...next.state, checkedAt: Date.now() };
     if (next.notify) await addNotification(live, config);
   };
-  if (config.twitch.length) {
+  for (let offset = 0; offset < config.twitch.length; offset += 20) {
+    const batch = config.twitch.slice(offset, offset + 20);
     try {
-      if (!config.twitchClientId || !config.twitchToken) throw new Error('Add your Client ID and connect your Twitch account in settings.');
-      // Twitch requires token validation on startup and once per hour.
-      const { twitchValidatedAt = 0 } = await chrome.storage.local.get('twitchValidatedAt');
-      if (Date.now() - twitchValidatedAt > 3600000) {
-        const validation = await (await request('https://id.twitch.tv/oauth2/validate', { headers: { Authorization: 'OAuth ' + config.twitchToken } })).json();
-        if (validation.client_id !== config.twitchClientId) throw new Error('The token does not belong to this Client ID. Reconnect Twitch.');
-        await chrome.storage.local.set({ twitchValidatedAt: Date.now() });
-      }
-      const params = new URLSearchParams({ first: '100' });
-      config.twitch.forEach(login => params.append('user_login', login));
-      const body = await (await request('https://api.twitch.tv/helix/streams?' + params, { headers: { 'Client-ID': config.twitchClientId, Authorization: 'Bearer ' + config.twitchToken } })).json();
-      if (!Array.isArray(body.data)) throw new Error('Unexpected Twitch response.');
-      for (const channel of config.twitch) {
-        const stream = body.data.find(item => item.user_login.toLowerCase() === channel);
-        await apply('twitch', channel, stream ? {
-          platform: 'twitch', channel, session: stream.id, name: stream.user_name,
-          title: stream.title || 'Live on Twitch', url: 'https://www.twitch.tv/' + channel
-        } : null);
+      const body = await (await request('https://gql.twitch.tv/gql', {
+        method: 'POST', headers: { 'Content-Type': 'application/json', 'Client-ID': WEBSITE_CLIENT_ID },
+        body: JSON.stringify(batch.map(channel => ({ operationName: 'RadarChannel', variables: { login: channel }, query: TWITCH_QUERY })))
+      })).json();
+      if (!Array.isArray(body) || body.length !== batch.length) throw new Error('Unexpected Twitch response.');
+      for (const [index, channel] of batch.entries()) {
+        try { await apply('twitch', channel, parseTwitchLive(body[index], channel)); }
+        catch (error) { errors.push(`Twitch (${channel}): ${error.message}`); }
       }
     } catch (error) { errors.push('Twitch: ' + error.message); }
   }
@@ -147,28 +142,6 @@ async function openStream(url, muted) {
   if (muted) await chrome.tabs.update(tab.id, { muted: true });
   await chrome.tabs.update(tab.id, { url });
 }
-async function connectTwitch() {
-  const config = await settings();
-  if (!config.twitchClientId) throw new Error('Save your Client ID before connecting.');
-  const state = crypto.randomUUID();
-  const redirect = chrome.identity.getRedirectURL('twitch');
-  const url = new URL('https://id.twitch.tv/oauth2/authorize');
-  url.search = new URLSearchParams({ client_id: config.twitchClientId, redirect_uri: redirect, response_type: 'token', state, scope: '', force_verify: 'true' });
-  const callback = await chrome.identity.launchWebAuthFlow({ url: url.href, interactive: true });
-  if (!callback || new URL(callback).origin !== new URL(redirect).origin || new URL(callback).pathname !== new URL(redirect).pathname) throw new Error('Invalid authentication response.');
-  const params = new URLSearchParams(new URL(callback).hash.slice(1));
-  if (params.get('state') !== state || !params.get('access_token')) throw new Error('Connection canceled or not authorized.');
-  const token = params.get('access_token');
-  const validation = await (await request('https://id.twitch.tv/oauth2/validate', { headers: { Authorization: 'OAuth ' + token } })).json();
-  if (validation.client_id !== config.twitchClientId) throw new Error('Client ID does not match the connection.');
-  await mutate(async () => {
-    const current = await settings();
-    if (current.twitchClientId !== config.twitchClientId) throw new Error('Client ID changed while connecting. Try again.');
-    await chrome.storage.local.set({ settings: { ...current, twitchToken: token }, twitchValidatedAt: Date.now() });
-    configurationVersion++;
-  });
-  await checkNow();
-}
 async function handle(message, sender) {
   if (message.type === 'GET_PENDING') {
     const config = await settings();
@@ -189,9 +162,8 @@ async function handle(message, sender) {
   }
   if (message.type === 'GET_STATUS') {
     const config = await settings();
-    const { twitchToken, ...publicSettings } = config;
     const data = await chrome.storage.local.get(['channelState', 'errors', 'lastCheck', 'notificationError']);
-    return { ...data, settings: publicSettings, connected: Boolean(twitchToken), redirectURL: chrome.identity.getRedirectURL('twitch') };
+    return { ...data, settings: config };
   }
   if (message.type === 'SAVE_SETTINGS') {
     await mutate(async () => {
@@ -199,23 +171,10 @@ async function handle(message, sender) {
       const next = validateSettings(message.settings, current);
       await chrome.storage.local.set({ settings: next });
       configurationVersion++;
-      if (next.twitchClientId !== current.twitchClientId) await chrome.storage.local.set({ twitchValidatedAt: 0 });
     });
     await schedule();
     await broadcast();
     checkNow().catch(console.error);
-    return;
-  }
-  if (message.type === 'CONNECT_TWITCH') return connectTwitch();
-  if (message.type === 'DISCONNECT_TWITCH') {
-    await mutate(async () => {
-      const config = await settings();
-      if (config.twitchToken) {
-        await request('https://id.twitch.tv/oauth2/revoke', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams({ client_id: config.twitchClientId, token: config.twitchToken }) });
-      }
-      await chrome.storage.local.set({ settings: { ...config, twitchToken: '' }, twitchValidatedAt: 0 });
-      configurationVersion++;
-    });
     return;
   }
   if (message.type === 'CHECK_NOW') return checkNow();
@@ -233,8 +192,15 @@ chrome.runtime.onMessage.addListener((message, sender, respond) => {
   return true;
 });
 chrome.alarms.onAlarm.addListener(alarm => { if (alarm.name === 'live-check') checkNow().catch(console.error); });
-chrome.runtime.onInstalled.addListener(() => schedule().catch(console.error));
-chrome.runtime.onStartup.addListener(async () => { await chrome.storage.local.set({ twitchValidatedAt: 0 }); await schedule(); });
+async function initialize() {
+  await mutate(async () => {
+    await chrome.storage.local.set({ settings: await settings() });
+    await chrome.storage.local.remove('twitchValidatedAt');
+  });
+  await schedule();
+}
+chrome.runtime.onInstalled.addListener(initialize);
+chrome.runtime.onStartup.addListener(initialize);
 chrome.notifications.onButtonClicked.addListener((id, index) => openNotification(id, index === 1).catch(console.error));
 chrome.notifications.onClicked.addListener(id => openNotification(id, false).catch(console.error));
 chrome.notifications.onClosed.addListener((id, byUser) => { if (byUser) dismiss(id, false).catch(console.error); });

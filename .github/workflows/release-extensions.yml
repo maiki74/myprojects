@@ -6,7 +6,7 @@ on:
       tag:
         description: Existing release tag to package and upload
         required: true
-        default: extensions-2026-10-07
+        default: extensions-2026-10-07-v2
         type: string
 
 permissions:

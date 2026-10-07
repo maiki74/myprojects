@@ -1,9 +1,20 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { DEFAULT_SETTINGS, normalizeTwitch, normalizeYouTube, youtubeLiveURL, extractJSON, parseYouTubeLive, parseYouTubeChannelPage, transition, safeStreamURL, validateSettings } from '../lib.js';
+import { DEFAULT_SETTINGS, cleanSettings, parseTwitchLive, normalizeTwitch, normalizeYouTube, youtubeLiveURL, extractJSON, parseYouTubeLive, parseYouTubeChannelPage, transition, safeStreamURL, validateSettings } from '../lib.js';
 
 const channelId = 'UC' + 'a'.repeat(22);
 const videoId = 'abcdefghijk';
+test('public Twitch results identify stream sessions and distinguish confirmed offline from errors', () => {
+  const user = { login: 'example', displayName: 'Example', broadcastSettings: { title: 'Live' }, stream: { id: 'one' } };
+  const live = parseTwitchLive({ data: { user } }, 'example');
+  assert.equal(live.session, 'one');
+  assert.equal(live.url, 'https://www.twitch.tv/example');
+  assert.equal(live.title, 'Live');
+  assert.equal(parseTwitchLive({ data: { user: { ...user, stream: null } } }, 'example'), null);
+  for (const result of [null, { errors: [{}] }, { data: { user: null } }, { data: { user: { ...user, login: 'other' } } }, { data: { user: { login: 'example' } } }, { data: { user: { ...user, stream: {} } } }]) {
+    assert.throws(() => parseTwitchLive(result, 'example'));
+  }
+});
 function page(overrides = {}) {
   return 'var ytInitialPlayerResponse = ' + JSON.stringify({
     videoDetails: { videoId, channelId, author: 'Example channel', title: 'Title with } and "quotes"' },
@@ -75,12 +86,13 @@ test('notifies once per session even after a false offline result', () => {
   assert.equal(transition(offline.state, live).notify, false);
   assert.equal(transition(offline.state, { session: 'session-2' }).notify, true);
 });
-test('validates settings, removes duplicates, and preserves authentication', () => {
+test('validates settings, removes duplicates, and removes legacy credentials', () => {
   const previous = { ...DEFAULT_SETTINGS, twitchClientId: 'client1234', twitchToken: 'secret' };
   const next = validateSettings({ ...previous, twitch: ['Alanzoka', 'alanzoka'], twitchToken: 'injected' }, previous);
   assert.deepEqual(next.twitch, ['alanzoka']);
-  assert.equal(next.twitchToken, 'secret');
-  assert.equal(validateSettings({ ...next, twitchClientId: 'other1234' }, next).twitchToken, '');
+  assert.equal('twitchToken' in next, false);
+  assert.equal('twitchClientId' in next, false);
+  assert.deepEqual(cleanSettings({ ...previous, extra: 'unexpected' }), DEFAULT_SETTINGS);
   assert.throws(() => validateSettings({ ...previous, intervalMinutes: 0 }));
   assert.throws(() => validateSettings({ ...previous, youtube: Array(101).fill('@test') }));
 });

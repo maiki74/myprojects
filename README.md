@@ -14,7 +14,7 @@ Two independent extensions for Brave and other Chromium browsers. Each project h
 3. Click **Load unpacked** and select `live-radar` or `twitch-pins`.
 4. Reload any tabs that were already open. To install both extensions, repeat the previous step with the other folder.
 
-No build or dependency installation is required. Live Radar requires a Twitch connection to monitor that platform; see its guide. Twitch Pins stores your pins locally and does not require that connection.
+No build, dependency installation, login, or API key is required. Live Radar monitors public Twitch and YouTube streams. Twitch Pins stores your pins locally.
 
 To update an existing extension and keep your local settings, copy the new files into the same installation folder, reload the extension in Brave, and reload your tabs.
 

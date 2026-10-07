@@ -1,7 +1,11 @@
 export const DEFAULT_SETTINGS = {
-  twitch: [], youtube: [], twitchClientId: '', twitchToken: '',
+  twitch: [], youtube: [],
   intervalMinutes: 2, inPage: true, desktop: true, enabled: true
 };
+
+export function cleanSettings(previous = {}) {
+  return Object.fromEntries(Object.entries(DEFAULT_SETTINGS).map(([key, fallback]) => [key, previous[key] ?? fallback]));
+}
 
 export function normalizeTwitch(value) {
   const raw = value.trim();
@@ -36,7 +40,7 @@ export function youtubeLiveURL(channel) {
 }
 
 export function validateSettings(input, previous = DEFAULT_SETTINGS) {
-  const settings = { ...DEFAULT_SETTINGS, ...previous };
+  const settings = cleanSettings(previous);
   for (const [key, normalize] of [['twitch', normalizeTwitch], ['youtube', normalizeYouTube]]) {
     if (!Array.isArray(input[key]) || input[key].length > 100) throw new Error('The limit is 100 channels per platform.');
     settings[key] = [...new Set(input[key].map(normalize))];
@@ -45,10 +49,24 @@ export function validateSettings(input, previous = DEFAULT_SETTINGS) {
   if (!Number.isFinite(interval) || interval < 1 || interval > 60) throw new Error('Use an interval between 1 and 60 minutes.');
   settings.intervalMinutes = interval;
   for (const key of ['inPage', 'desktop', 'enabled']) settings[key] = Boolean(input[key]);
-  settings.twitchClientId = String(input.twitchClientId || '').trim();
-  if (settings.twitchClientId && !/^[a-zA-Z0-9]{8,100}$/.test(settings.twitchClientId)) throw new Error('Invalid Twitch Client ID.');
-  if (settings.twitchClientId !== previous.twitchClientId) settings.twitchToken = '';
   return settings;
+}
+
+export function parseTwitchLive(result, channel) {
+  if (!result || result.errors?.length) throw new Error('The public Twitch lookup is unavailable.');
+  const user = result.data?.user;
+  if (!user) throw new Error('Channel not found on Twitch.');
+  if (typeof user.login !== 'string' || user.login.toLowerCase() !== channel) throw new Error('Twitch returned a different channel.');
+  if (!Object.hasOwn(user, 'stream')) throw new Error('Twitch did not return a valid channel status.');
+  if (user.stream === null) return null;
+  if (typeof user.stream !== 'object' || Array.isArray(user.stream) || typeof user.stream.id !== 'string' || !user.stream.id.trim()) {
+    throw new Error('Twitch did not return a valid stream ID.');
+  }
+  return {
+    platform: 'twitch', channel, session: user.stream.id,
+    name: user.displayName || channel, title: user.broadcastSettings?.title || 'Live on Twitch',
+    url: 'https://www.twitch.tv/' + channel
+  };
 }
 
 // Read JSON objects from HTML without executing page scripts.

@@ -6,13 +6,11 @@
     <div class="grid">
       <section class="panel"><div class="platform"><div class="platform-icon">T</div><div><h2>Twitch</h2><p>Streams from your list, in any tab.</p></div></div>
         <label for="twitch">Streamers · one per line</label><textarea id="twitch" placeholder="alanzoka&#10;gaules&#10;https://www.twitch.tv/yourchannel" spellcheck="false"></textarea><p class="help">Enter channel logins or URLs. Up to 100 streamers.</p>
-        <label for="client-id">Your Twitch application Client ID</label><input id="client-id" type="text" placeholder="Paste the public Client ID" autocomplete="off" spellcheck="false">
-        <div class="row field"><button id="connect" type="button">Connect Twitch</button><button id="disconnect" type="button" hidden>Disconnect</button><span id="connection" class="tag">Not connected</span></div>
-        <details><summary>How to set up your Twitch connection</summary><ol><li>Open <a href="https://dev.twitch.tv/console/apps" target="_blank" rel="noreferrer">the Twitch application console</a> and register an application. Your account must have two-factor authentication enabled.</li><li>Choose the <strong>Browser Extension</strong> category if available. This extension uses the implicit OAuth flow; keep the application type set to <strong>Confidential</strong> for this flow. Register this exact redirect URL:<input id="redirect-url" type="text" readonly aria-label="OAuth redirect URL"></li><li>Copy the <strong>Client ID</strong> into the field above, save, and click <strong>Connect Twitch</strong>. Do not generate or paste a Client Secret: the implicit flow does not use one.</li></ol><p>The connection only requests basic identity information; it does not access your chat. The token stays in this extension’s local storage. Reconnect when it expires.</p></details>
+        <p class="notice">No login required. Add your streamers and save to start receiving alerts.</p>
       </section>
       <section class="panel youtube"><div class="platform"><div class="platform-icon">▶</div><div><h2>YouTube</h2><p>One place to keep up with every channel.</p></div></div>
         <label for="youtube">Channels · one per line</label><textarea id="youtube" placeholder="@yourchannel&#10;https://www.youtube.com/@anotherchannel&#10;https://www.youtube.com/channel/UC…" spellcheck="false"></textarea><p class="help">Enter an @handle, an @ URL, or a channel ID (UC…). Up to 100 channels.</p>
-        <div class="notice">No API key needed: we check the channel’s public live page. Private, members-only, age-restricted, or blocked streams may not be detected. Premieres and scheduled streams do not trigger alerts before they start.</div>
+        <div class="notice">No login or API key needed: we check the channel’s public live page. Private, members-only, age-restricted, or blocked streams may not be detected. Premieres and scheduled streams do not trigger alerts before they start.</div>
         <p class="help">If YouTube cannot confirm an @handle, use a URL in the format <code>/channel/UC…</code>. Lookup errors appear in the extension panel.</p>
       </section>
     </div>

@@ -15,20 +15,19 @@ No packages or build step are required. Keep the extension folder on disk while 
 
 ## Twitch
 
-The official API requires a Client ID and an OAuth connection. This project does not include shared credentials.
+Add streamer logins, such as `alanzoka`, or channel URLs, then save. **No Twitch login, application registration, API key, or OAuth connection is needed.**
 
-1. Visit <https://dev.twitch.tv/console/apps>, enable two-factor authentication on your account, and register an application.
-2. Choose **Browser Extension** as the category if available. This extension uses the implicit OAuth flow; keep the application type set to **Confidential** for this flow (**Public** is intended for Twitch’s device code flow). The implicit flow does not use a Client Secret: do not generate, share, or include one in the extension. Add the OAuth URL shown in the extension’s settings to the application’s redirect URL list. Each installation may have a different ID; use the URL shown in your installation.
-3. Paste the **Client ID**, save, and click **Connect Twitch**. Authorize the connection in the Twitch window.
-4. Enter streamer logins, such as `alanzoka`, or channel URLs.
+Live Radar uses read-only queries to the public website endpoint at `gql.twitch.tv`, using the same anonymous access as Twitch Pins. The website’s public Client ID is included in the extension; it is not a password, a personal token, or a secret you need to configure. Requests omit browser cookies and do not send an Authorization header.
 
-The implicit authorization flow does not use a Client Secret or request extra chat or account management permissions. The token is validated on browser startup and at least once per hour while Twitch channels are configured. It stays in the extension’s local storage and is not synced. When it expires or is revoked, the panel asks you to reconnect. **Disconnect** revokes the token on Twitch.
+The stream ID identifies each broadcast so repeated checks and worker restarts do not repeat an alert. Lookups run in batches of up to 20 channels. A failed query preserves the last known status, appears in the panel, and does not prevent other channels in the batch from being checked.
+
+This endpoint is unofficial for extensions. Twitch may change its response format, restrict anonymous access, or rate-limit requests. The extension reports lookup errors rather than asking you to log in or treating failed requests as confirmed offline.
 
 ## YouTube
 
 Add `@handle`, `https://www.youtube.com/@handle`, or a `https://www.youtube.com/channel/UC…` URL.
 
-The extension checks the channel’s public `/live` page and confirms `isLiveNow` in the player data. It also handles pages that show a live tab instead of redirecting to a stream. No API key is required, and it does not execute page scripts. The stream owner must match a channel in your list; recommendations from other channels do not trigger alerts. When needed, the extension resolves the @handle through the channel page’s metadata. If YouTube cannot confirm a handle, use the `UC…` ID.
+The extension checks the channel’s public `/live` page and confirms `isLiveNow` in the player data. It also handles pages that show a live tab instead of redirecting to a stream. No YouTube login or API key is required. Requests omit browser cookies, and the extension does not execute page scripts. The stream owner must match a channel in your list; recommendations from other channels do not trigger alerts. When needed, the extension resolves the @handle through the channel page’s metadata. If YouTube cannot confirm a handle, use the `UC…` ID.
 
 This mechanism depends on YouTube’s public page format. Consent pages, format changes, rate limits, and private, restricted, or members-only streams may prevent detection. Errors appear in the panel and preserve the last known status; a channel with an error is not automatically treated as offline. The panel may therefore show an older status while a lookup fails.
 
@@ -46,13 +45,13 @@ This mechanism depends on YouTube’s public page format. Consent pages, format 
 
 ## Permissions and privacy
 
-`storage` saves lists, the connection, and status; `alarms` schedules checks; `notifications` creates desktop alerts; `tabs` finds tabs for alerts and opens or mutes streams; `identity` connects Twitch. The content script runs on HTTP/HTTPS pages to display alerts, but does not read or send the contents of visited pages. Stream titles are displayed as text, without interpreting HTML.
+`storage` saves lists and status; `alarms` schedules checks; `notifications` creates desktop alerts; `tabs` finds tabs for alerts and opens or mutes streams. The content script runs on HTTP/HTTPS pages to display alerts, but does not read or send the contents of visited pages. Stream titles are displayed as text, without interpreting HTML.
 
-The only external services queried are `api.twitch.tv`, `id.twitch.tv`, and `www.youtube.com`. When you choose to watch, Brave opens the corresponding site normally. There is no analytics or data collection on a separate server. The extension does not disable Brave Shields; blocked services produce an error in the panel.
+The only external services queried are `gql.twitch.tv` and `www.youtube.com`. When you choose to watch, Brave opens the corresponding site normally. There is no analytics or data collection on a separate server. The extension does not disable Brave Shields; blocked services produce an error in the panel.
 
-## Update to 1.0.1
+## Update to 1.1.0
 
-Copy the new files into the **same folder** used for the previous installation, reload the extension in `brave://extensions`, and reload your tabs. Version 1.0.1 uses English throughout the interface, alerts, and error messages. Using the same folder keeps the extension ID and saved settings.
+Copy the new files into the **same folder** used for the previous installation, reload the extension in `brave://extensions`, and reload your tabs. Version 1.1.0 removes Twitch login and Client ID setup. Twitch and YouTube monitoring work without an account connection. Your channel lists, notification preferences, and existing stream sessions are preserved. Old locally stored Twitch credentials are removed on update or browser startup. The interface and documentation remain in English.
 
 ## Development and validation
 
@@ -63,10 +62,10 @@ cd live-radar
 npm test
 ```
 
-Tests cover live stream recognition, scheduled streams, channel ownership, deduplication, worker restarts, network errors, authorization, settings isolation, pausing during a lookup, and the order of opening and muting tabs. They use simulated responses and do not require real accounts or credentials.
+Tests cover live stream recognition, scheduled streams, channel ownership, deduplication, worker restarts, network errors, anonymous requests, removal of legacy credentials, settings isolation, pausing during a lookup, and the order of opening and muting tabs. They use simulated responses and do not require real accounts or credentials.
 
-For browser validation, load the folder as an extension, use **Test alert**, and try all three actions on a regular page. Then configure a channel that is actually live and click **Check now**. Twitch authentication and real YouTube detection require validation in your installation.
+For browser validation, load the folder as an extension, use **Test alert**, and try all three actions on a regular page. Then configure a channel that is actually live and click **Check now**. Confirm live detection without signing into Twitch or YouTube in your installation.
 
 ### Validation in this environment
 
-Automated tests passed. The settings page, popup, and three alert buttons were exercised in Chromium with simulated extension APIs. This environment’s Chromium policy blocks unpacked extensions, so a complete extension installation could not be verified here. The environment’s network also blocked public YouTube requests. No Twitch account authentication or real live stream detection was verified. Complete those checks in your Brave installation.
+Automated tests passed. The settings page, popup, and three alert buttons were exercised in Chromium with simulated extension APIs. This environment’s Chromium policy blocks unpacked extensions, so a complete extension installation could not be verified here. The environment’s network also blocked public Twitch and YouTube requests. Real live stream detection was not verified from this machine. Complete those checks in your Brave installation.
