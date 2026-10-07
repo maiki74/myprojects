@@ -38,7 +38,9 @@ function render() {
     const metadata = document.createElement('p'); metadata.className = 'metadata';
     metadata.hidden = !status.online;
     if (status.online) metadata.textContent = new Intl.NumberFormat('pt-BR').format(status.viewers || 0) + ' espectadores · ' + (status.game || 'Categoria não informada');
+    metadata.title = metadata.textContent;
     const title = document.createElement('p'); title.className = 'title'; title.textContent = status.error || (status.online ? status.title || status.game : '') || '';
+    title.title = title.textContent;
     const actions = document.createElement('div'); actions.className = 'actions';
     const open = document.createElement('button'); open.textContent = 'Abrir canal'; open.addEventListener('click', () => send('OPEN_CHANNEL', { login: pin.login }).catch(error => feedback(error.message, true)));
     const up = document.createElement('button'); up.textContent = '↑'; up.title = 'Mover ' + name + ' para cima'; up.setAttribute('aria-label', up.title); up.disabled = index === 0; up.addEventListener('click', () => action('MOVE', { login: pin.login, direction: 'up' }));

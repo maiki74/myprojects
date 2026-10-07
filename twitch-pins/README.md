@@ -27,9 +27,9 @@ Consulta os canais a cada **2 minutos**, enquanto o Brave está aberto, e mostra
 
 Guarda apenas o estado atual dos canais. Erros de rede não tornam um canal automaticamente offline: a interface sinaliza indisponibilidade e mantém o último estado conhecido.
 
-## Atualizar para 1.2
+## Atualizar para 1.2.1
 
-Extraia os arquivos novos sobre a **mesma pasta** usada na instalação anterior, clique em **Recarregar** no cartão da extensão em `brave://extensions` e recarregue as abas da Twitch. Usar a mesma pasta mantém o identificador da extensão e os canais salvos. A versão 1.2 alinha o alfinete, mostra espectadores/jogo/título nos favoritos e reduz o espaço abaixo da lista. O olhinho, os fixados e sua ordem são preservados.
+Extraia os arquivos novos sobre a **mesma pasta** usada na instalação anterior, clique em **Recarregar** no cartão da extensão em `brave://extensions` e recarregue as abas da Twitch. Usar a mesma pasta mantém o identificador da extensão e os canais salvos. A versão 1.2.1 mantém os textos dentro da barra lateral e do painel, usa reticências nos textos longos e abrevia números grandes de espectadores. Passe o mouse para ver os valores e textos completos. O olhinho, os fixados e sua ordem são preservados.
 
 ## Compatibilidade e privacidade
 
