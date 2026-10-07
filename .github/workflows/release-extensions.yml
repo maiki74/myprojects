@@ -1,0 +1,57 @@
+name: Upload extension ZIPs
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing release tag to package and upload
+        required: true
+        default: extensions-2026-10-07
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  upload:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      RELEASE_TAG: ${{ inputs.tag }}
+    steps:
+      - name: Check out the release source
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ inputs.tag }}
+          persist-credentials: false
+      - name: Verify the release and run tests
+        run: |
+          gh release view "$RELEASE_TAG"
+          npm test
+      - name: Package each extension
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          from zipfile import ZIP_DEFLATED, ZipFile
+          import json
+          import subprocess
+
+          for folder in ('live-radar', 'twitch-pins'):
+              files = subprocess.check_output(
+                  ['git', 'ls-files', '-z', '--', folder],
+              ).decode().split('\0')
+              target = Path(folder + '.zip')
+              with ZipFile(target, 'w', ZIP_DEFLATED) as archive:
+                  for filename in sorted(filter(None, files)):
+                      archive.write(filename, filename)
+              with ZipFile(target) as archive:
+                  assert archive.testzip() is None
+                  manifest = json.loads(archive.read(folder + '/manifest.json'))
+                  assert manifest['manifest_version'] == 3
+                  print(f"{target}: {manifest['name']} {manifest['version']}")
+          PY
+      - name: Upload both release assets
+        run: gh release upload "$RELEASE_TAG" live-radar.zip twitch-pins.zip --clobber
