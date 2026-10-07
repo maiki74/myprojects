@@ -1,0 +1,13 @@
+{
+  "manifest_version": 3,
+  "name": "Twitch Pins — Canais fixados",
+  "version": "1.1.0",
+  "description": "Fixe canais acima dos canais seguidos na Twitch e acompanhe as lives sem precisar seguir.",
+  "permissions": ["storage", "alarms"],
+  "host_permissions": ["https://gql.twitch.tv/*"],
+  "background": { "service_worker": "background.js", "type": "module" },
+  "content_scripts": [{ "matches": ["https://www.twitch.tv/*", "https://twitch.tv/*"], "js": ["content.js"], "run_at": "document_idle" }],
+  "web_accessible_resources": [{ "resources": ["lib.js"], "matches": ["https://www.twitch.tv/*", "https://twitch.tv/*"] }],
+  "action": { "default_popup": "popup.html", "default_title": "Twitch Pins", "default_icon": "icons/icon128.png" },
+  "icons": { "16": "icons/icon16.png", "48": "icons/icon48.png", "128": "icons/icon128.png" }
+}

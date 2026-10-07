@@ -1,0 +1,9 @@
+{
+  "name": "brave-extensions",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test live-radar/tests/*.test.js twitch-pins/tests/*.test.js"
+  }
+}

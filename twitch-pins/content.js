@@ -1,0 +1,134 @@
+(async () => {
+  const { channelFromURL, safeAvatar } = await import(chrome.runtime.getURL('lib.js'));
+  const PIN_SVG = '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3h6l-1 6 3 4v2H7v-2l3-4-1-6Z"/><path d="M12 15v6"/></svg>';
+  const EYE_SVG = '<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg>';
+  const EYE_OFF_SVG = '<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m3 3 18 18M10.6 5.1A12 12 0 0 1 12 5c6.5 0 10 7 10 7a19 19 0 0 1-3.1 4.1M6.3 6.3A20 20 0 0 0 2 12s3.5 7 10 7c1.9 0 3.6-.6 5.1-1.5M10 10a3 3 0 0 0 4 4"/></svg>';
+  let state = { pins: [], channelState: {}, sidebarCollapsed: false };
+  let lastURL = location.href;
+  let timer;
+  let buttonBusy = false;
+  let pinError = '';
+  let renderKey = '';
+  const buttonHost = document.createElement('span');
+  buttonHost.id = 'twitch-pins-channel-button';
+  buttonHost.style.cssText = 'display:inline-flex;vertical-align:middle;margin:0 8px;';
+  const buttonShadow = buttonHost.attachShadow({ mode: 'open' });
+  buttonShadow.innerHTML = `<style>:host{font:600 13px/1.4 system-ui,sans-serif}button{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border:0;background:transparent;color:#bf94ff;padding:0;border-radius:6px;cursor:pointer}button:hover{background:#a970ff22}button[aria-pressed=true]{background:#a970ff;color:#170c24}button:disabled{opacity:.65;cursor:wait}button:focus-visible{outline:2px solid #fff;outline-offset:2px}.error{font:12px system-ui;color:#ff819a;max-width:230px;margin-left:8px}:host(.floating){position:fixed!important;right:24px!important;bottom:28px!important;z-index:100000!important;background:#18181b;border-radius:8px;padding:8px;box-shadow:0 4px 20px #0005}</style><button type="button" aria-pressed="false" aria-label="Fixar canal">${PIN_SVG}</button><span class="error" role="status"></span>`;
+  const pinButton = buttonShadow.querySelector('button');
+  const sidebarHost = document.createElement('section');
+  sidebarHost.id = 'twitch-pins-sidebar';
+  sidebarHost.style.cssText = 'display:block;width:100%;box-sizing:border-box;';
+  const sidebarShadow = sidebarHost.attachShadow({ mode: 'open' });
+  sidebarShadow.innerHTML = `<style>
+    :host{display:block;color:var(--color-text-base,#efeff1);font:13px/1.5 system-ui,sans-serif}*{box-sizing:border-box}.box{padding:12px 6px 10px;border-bottom:1px solid #8883;margin-bottom:10px}.heading{display:flex;align-items:center;gap:7px;padding:0 5px 8px;color:#a970ff;font-weight:750;font-size:12px;letter-spacing:.05em}.heading .count{color:var(--color-text-alt-2,#92929a);font-size:11px;font-weight:500;letter-spacing:0;margin-right:auto}.tool{border:0;background:transparent;color:#a970ff;font:16px system-ui;cursor:pointer;border-radius:4px;padding:2px 4px}.tool:hover{background:#a970ff22}.list{display:grid;gap:3px}.row{display:flex;align-items:center;gap:7px;padding:5px;border-radius:5px}.row:hover{background:#8882}.channel{display:flex;align-items:center;gap:8px;flex:1;min-width:0;color:inherit;text-decoration:none}.avatar{display:grid;place-items:center;width:30px;height:30px;flex-shrink:0;background:#a970ff33;color:#bd93ff;border-radius:50%;font-size:11px;font-weight:700;overflow:hidden}.avatar img{width:100%;height:100%;object-fit:cover}.text{min-width:0;flex:1}.name{display:block;font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.detail{display:block;color:var(--color-text-alt-2,#92929a);font-size:10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.status{width:7px;height:7px;border-radius:50%;background:#777;flex-shrink:0}.status.live{background:#eb4760}.status.unknown{background:#a970ff}.remove{border:0;background:transparent;color:var(--color-text-alt-2,#92929a);cursor:pointer;font-size:16px;line-height:1;padding:4px;opacity:0}.row:hover .remove,.remove:focus-visible{opacity:1}.empty{padding:4px 6px;font-size:11px;color:var(--color-text-alt-2,#92929a)}.contents[hidden]{display:none}.visibility{display:inline-flex;align-items:center;justify-content:center}.error{color:#e0909f;font-size:10px;padding:5px 6px}.compact .heading{justify-content:center;gap:3px;padding:0 0 7px}.compact .heading-label,.compact .count,.compact .tool,.compact .text,.compact .remove,.compact .empty,.compact .error{display:none}.compact .visibility{display:inline-flex}.compact .row{padding:4px 0}.compact .channel{justify-content:center;gap:0;position:relative}.compact .status{position:absolute;right:0;bottom:0;border:1px solid var(--color-background-base,#18181b);width:9px;height:9px}.compact .box{padding:10px 5px}.tool:focus-visible,a:focus-visible,.remove:focus-visible{outline:2px solid #a970ff;outline-offset:2px}
+  </style><div class="box"><div class="heading">${PIN_SVG}<span class="heading-label">FIXADOS</span><span class="count"></span><button class="tool visibility" type="button" aria-expanded="true" aria-controls="twitch-pins-list-content" aria-label="Ocultar canais fixados" title="Ocultar canais fixados">${EYE_SVG}</button><button class="tool refresh" type="button" title="Atualizar status" aria-label="Atualizar canais fixados">↻</button><button class="tool manage" type="button" title="Organizar fixados" aria-label="Organizar canais fixados">⚙</button></div><div class="contents" id="twitch-pins-list-content"><div class="list"></div><div class="empty">Nenhum canal fixado.</div><div class="error" role="status"></div></div></div>`;
+  const resize = new ResizeObserver(entries => {
+    const width = entries[0]?.contentRect.width;
+    sidebarShadow.querySelector('.box').classList.toggle('compact', width > 0 && width < 110);
+  });
+  let observedSidebar;
+  async function send(type, args = {}) {
+    const response = await chrome.runtime.sendMessage({ type, ...args });
+    if (!response?.ok) throw new Error(response?.error || 'A extensão não respondeu.');
+    return response.data;
+  }
+  pinButton.addEventListener('click', async event => {
+    event.preventDefault(); event.stopPropagation();
+    const login = channelFromURL(location.href);
+    if (!login || buttonBusy) return;
+    buttonBusy = true; pinError = ''; renderButton();
+    try {
+      state = await send(state.pins.some(pin => pin.login === login) ? 'UNPIN' : 'PIN', { login });
+      renderSidebar();
+    } catch (error) { pinError = error.message; }
+    finally { buttonBusy = false; renderButton(); }
+  });
+  sidebarShadow.querySelector('.refresh').addEventListener('click', async () => {
+    const button = sidebarShadow.querySelector('.refresh'); button.disabled = true;
+    try { state = await send('REFRESH'); renderSidebar(); }
+    catch (error) { sidebarShadow.querySelector('.error').textContent = error.message; }
+    finally { button.disabled = false; }
+  });
+  sidebarShadow.querySelector('.manage').addEventListener('click', () => send('OPEN_PANEL').catch(() => {}));
+  sidebarShadow.querySelector('.visibility').addEventListener('click', async () => {
+    const button = sidebarShadow.querySelector('.visibility');
+    button.disabled = true;
+    try { state = await send('SET_SIDEBAR_COLLAPSED', { collapsed: !state.sidebarCollapsed }); renderSidebar(); }
+    catch (error) { button.title = error.message; }
+    finally { button.disabled = false; }
+  });
+  function renderButton() {
+    const login = channelFromURL(location.href);
+    if (!login) { buttonHost.remove(); return; }
+    const pinned = state.pins.some(pin => pin.login === login);
+    pinButton.setAttribute('aria-label', (pinned ? 'Desafixar canal ' : 'Fixar canal ') + login);
+    pinButton.setAttribute('aria-pressed', String(pinned));
+    pinButton.title = pinned ? 'Remover ' + login + ' dos fixados' : 'Fixar ' + login + ' sem seguir';
+    pinButton.disabled = buttonBusy;
+    buttonShadow.querySelector('.error').textContent = pinError;
+    const header = document.querySelector('[data-a-target="channel-header-right"], [data-test-selector="channel-header__actions"]');
+    const action = document.querySelector('[data-a-target="follow-button"], [data-a-target="unfollow-button"], [data-a-target="subscribe-button"], [data-a-target="subscription-button"]');
+    const target = header || action?.parentElement;
+    if (target && !target.closest('#twitch-pins-sidebar')) {
+      buttonHost.classList.remove('floating');
+      if (buttonHost.parentElement !== target) target.append(buttonHost);
+    } else {
+      buttonHost.classList.add('floating');
+      if (buttonHost.parentElement !== document.body) document.body.append(buttonHost);
+    }
+  }
+  function renderSidebar() {
+    const sidebar = document.querySelector('.side-nav__scrollable_content .scrollable-area-content, .side-nav__scrollable_content, [data-a-target="side-nav"] .scrollable-area-content, [data-a-target="side-nav"], .side-nav');
+    if (!sidebar) { sidebarHost.remove(); observedSidebar = undefined; resize.disconnect(); return; }
+    if (sidebarHost.parentElement !== sidebar) sidebar.prepend(sidebarHost);
+    if (observedSidebar !== sidebar) { resize.disconnect(); resize.observe(sidebar); observedSidebar = sidebar; }
+    const key = JSON.stringify(state);
+    if (key === renderKey) return;
+    renderKey = key;
+    const collapsed = Boolean(state.sidebarCollapsed);
+    sidebarShadow.querySelector('.contents').hidden = collapsed;
+    const visibility = sidebarShadow.querySelector('.visibility');
+    visibility.innerHTML = collapsed ? EYE_OFF_SVG : EYE_SVG;
+    visibility.setAttribute('aria-expanded', String(!collapsed));
+    visibility.title = collapsed ? 'Mostrar canais fixados' : 'Ocultar canais fixados';
+    visibility.setAttribute('aria-label', visibility.title);
+    sidebarShadow.querySelector('.count').textContent = String(state.pins.length);
+    sidebarShadow.querySelector('.empty').hidden = Boolean(state.pins.length);
+    sidebarShadow.querySelector('.error').textContent = state.error ? 'Não foi possível atualizar. Último estado conhecido; tente ↻.' : '';
+    const list = sidebarShadow.querySelector('.list'); list.replaceChildren();
+    for (const pin of state.pins) {
+      const status = state.channelState[pin.login] || {};
+      const name = status.displayName || pin.displayName || pin.login;
+      const current = status.error ? 'Status indisponível' : status.online === true ? 'Ao vivo' : status.online === false ? 'Offline' : 'Verificando';
+      const row = document.createElement('div'); row.className = 'row';
+      const channel = document.createElement('a'); channel.className = 'channel'; channel.href = 'https://www.twitch.tv/' + pin.login;
+      channel.title = `${name} · ${current}\n${status.title || ''}${status.error ? '\n' + status.error : ''}`;
+      channel.setAttribute('aria-label', name + ' — ' + current);
+      const avatar = document.createElement('span'); avatar.className = 'avatar';
+      const imageURL = safeAvatar(status.avatar);
+      if (imageURL) { const image = document.createElement('img'); image.src = imageURL; image.alt = ''; image.loading = 'lazy'; image.addEventListener('error', () => { avatar.textContent = name.slice(0, 2).toUpperCase(); }, { once: true }); avatar.append(image); }
+      else avatar.textContent = name.slice(0, 2).toUpperCase();
+      const text = document.createElement('span'); text.className = 'text';
+      const username = document.createElement('span'); username.className = 'name'; username.textContent = name;
+      const detail = document.createElement('span'); detail.className = 'detail'; detail.textContent = current;
+      text.append(username, detail);
+      const dot = document.createElement('span'); dot.className = 'status' + (status.error || status.online === undefined ? ' unknown' : status.online ? ' live' : '');
+      channel.append(avatar, text, dot);
+      const remove = document.createElement('button'); remove.className = 'remove'; remove.type = 'button'; remove.textContent = '×'; remove.title = 'Desafixar ' + name; remove.setAttribute('aria-label', 'Desafixar ' + name);
+      remove.addEventListener('click', async () => { try { state = await send('UNPIN', { login: pin.login }); renderSidebar(); renderButton(); } catch (error) { sidebarShadow.querySelector('.error').textContent = error.message; } });
+      row.append(channel, remove); list.append(row);
+    }
+  }
+  function mount() { renderButton(); renderSidebar(); }
+  function debounceMount() { clearTimeout(timer); timer = setTimeout(mount, 100); }
+  try { state = await send('GET_STATE'); } catch (error) { state.error = error.message; }
+  mount();
+  new MutationObserver(debounceMount).observe(document.body, { childList: true, subtree: true });
+  chrome.storage.onChanged.addListener((changes, area) => {
+    if (area !== 'local') return;
+    for (const key of ['pins', 'channelState', 'lastAttempt', 'lastSuccess', 'error', 'sidebarCollapsed']) if (changes[key]) state[key] = changes[key].newValue ?? (key === 'pins' ? [] : key === 'channelState' ? {} : key === 'sidebarCollapsed' ? false : '');
+    mount();
+  });
+  addEventListener('popstate', () => { pinError = ''; mount(); });
+  setInterval(() => { if (lastURL !== location.href) { lastURL = location.href; pinError = ''; mount(); } }, 1000);
+})().catch(error => console.warn('Twitch Pins:', error.message));

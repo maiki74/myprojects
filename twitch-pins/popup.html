@@ -1,0 +1,9 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Twitch Pins · Seus fixados</title><link rel="stylesheet" href="popup.css"></head>
+<body><main>
+<header><div class="brand"><img src="icons/icon128.png" alt=""><div><h1>Twitch <span>Pins</span></h1><p>Canais fixados</p></div><span id="total" class="total">0/50</span></div></header>
+<form id="add-form"><label for="channel">Fixar um canal</label><div class="input-row"><input id="channel" type="text" placeholder="Login ou link da Twitch" autocomplete="off" spellcheck="false" required><button class="primary" id="add" type="submit">Fixar</button></div></form>
+<div class="section-title"><h2>Sua lista</h2><button id="refresh" class="quiet" type="button">↻ Atualizar</button></div>
+<div id="list"></div><div id="feedback" role="status" aria-live="polite"></div><div id="last-update"></div>
+<footer><p>Use o alfinete na página do canal para fixar ou desafixar.</p></footer>
+</main><script type="module" src="popup.js"></script></body></html>
