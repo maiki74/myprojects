@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Twitch Pins — Canais fixados",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Fixe canais acima dos canais seguidos na Twitch e acompanhe as lives sem precisar seguir.",
   "permissions": ["storage", "alarms"],
   "host_permissions": ["https://gql.twitch.tv/*"],

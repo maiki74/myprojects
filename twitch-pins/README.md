@@ -13,7 +13,7 @@ Não precisa de pacotes, compilação, conta de desenvolvedor, chave de API nem 
 
 ## Usar
 
-- Abra um canal da Twitch. O botão com **ícone de alfinete**, sem texto, aparece junto das ações **Seguir/Inscrever-se**, quando o layout da Twitch permite. Clique para fixar; o alfinete fica destacado. Clique novamente para desafixar. O nome da ação aparece ao passar o mouse e fica disponível para leitores de tela.
+- Abra um canal da Twitch. O botão com **ícone de alfinete**, sem texto, aparece alinhado na mesma linha das ações **Seguir/Inscrever-se**, quando o layout da Twitch permite. Clique para fixar; o alfinete fica destacado. Clique novamente para desafixar. O nome da ação aparece ao passar o mouse e fica disponível para leitores de tela.
 - Se o cabeçalho não for reconhecido, o mesmo botão aparece no canto inferior direito da página do canal.
 - Os fixados aparecem antes dos seguidos na barra lateral. Clique no canal para abri-lo ou em **×** para desafixar. A lista mantém a ordem escolhida, com novos fixados no topo.
 - Use o **olhinho** no título da seção para recolher ou expandir os fixados. A preferência fica salva e acompanha as outras abas. Recolher não remove os canais, e o olhinho continua disponível com a barra lateral estreita.
@@ -23,13 +23,13 @@ Não precisa de pacotes, compilação, conta de desenvolvedor, chave de API nem 
 
 ## Status
 
-Consulta os canais a cada **2 minutos**, enquanto o Brave está aberto, e mostra **Ao vivo**, **Offline**, **Verificando** ou **Status indisponível**. Também mostra o título, categoria e último estado conhecido quando disponíveis. O ícone da extensão exibe a quantidade de canais com estado confirmado ao vivo.
+Consulta os canais a cada **2 minutos**, enquanto o Brave está aberto, e mostra **Ao vivo**, **Offline**, **Verificando** ou **Status indisponível**. Nos canais ao vivo, a barra lateral mostra a **quantidade de espectadores**, o **jogo/categoria** e o **título da live**. Textos longos são cortados com reticências, e o conteúdo completo aparece ao passar o mouse. Esses dados também aparecem no painel. O ícone da extensão exibe a quantidade de canais com estado confirmado ao vivo.
 
 Guarda apenas o estado atual dos canais. Erros de rede não tornam um canal automaticamente offline: a interface sinaliza indisponibilidade e mantém o último estado conhecido.
 
-## Atualizar para 1.1
+## Atualizar para 1.2
 
-Extraia os arquivos novos sobre a **mesma pasta** usada na instalação anterior, clique em **Recarregar** no cartão da extensão em `brave://extensions` e recarregue as abas da Twitch. Usar a mesma pasta mantém o identificador da extensão e os canais salvos. Esta atualização remove as estatísticas antigas, preserva os fixados e sua ordem, e adiciona o olhinho e o alfinete compacto.
+Extraia os arquivos novos sobre a **mesma pasta** usada na instalação anterior, clique em **Recarregar** no cartão da extensão em `brave://extensions` e recarregue as abas da Twitch. Usar a mesma pasta mantém o identificador da extensão e os canais salvos. A versão 1.2 alinha o alfinete, mostra espectadores/jogo/título nos favoritos e reduz o espaço abaixo da lista. O olhinho, os fixados e sua ordem são preservados.
 
 ## Compatibilidade e privacidade
 

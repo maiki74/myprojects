@@ -35,6 +35,9 @@ function render() {
     const indicator = document.createElement('span'); indicator.className = 'state' + (status.error ? ' error' : status.online ? ' live' : '');
     indicator.textContent = status.error ? 'Indisponível' : status.online === true ? '● Ao vivo' : status.online === false ? 'Offline' : 'Verificando…';
     top.append(avatar, identity, indicator);
+    const metadata = document.createElement('p'); metadata.className = 'metadata';
+    metadata.hidden = !status.online;
+    if (status.online) metadata.textContent = new Intl.NumberFormat('pt-BR').format(status.viewers || 0) + ' espectadores · ' + (status.game || 'Categoria não informada');
     const title = document.createElement('p'); title.className = 'title'; title.textContent = status.error || (status.online ? status.title || status.game : '') || '';
     const actions = document.createElement('div'); actions.className = 'actions';
     const open = document.createElement('button'); open.textContent = 'Abrir canal'; open.addEventListener('click', () => send('OPEN_CHANNEL', { login: pin.login }).catch(error => feedback(error.message, true)));
@@ -42,7 +45,7 @@ function render() {
     const down = document.createElement('button'); down.textContent = '↓'; down.title = 'Mover ' + name + ' para baixo'; down.setAttribute('aria-label', down.title); down.disabled = index === data.pins.length - 1; down.addEventListener('click', () => action('MOVE', { login: pin.login, direction: 'down' }));
     const remove = document.createElement('button'); remove.textContent = 'Desafixar'; remove.className = 'remove'; remove.setAttribute('aria-label', 'Desafixar ' + name); remove.addEventListener('click', () => action('UNPIN', { login: pin.login }));
     actions.append(open, up, down, remove);
-    card.append(top, title, actions); $('list').append(card);
+    card.append(top, metadata, title, actions); $('list').append(card);
   });
   $('last-update').textContent = data.lastAttempt ? 'Última consulta: ' + new Date(data.lastAttempt).toLocaleTimeString('pt-BR') + (data.error ? ' · houve erros; último estado conhecido.' : '') : 'Os status são consultados a cada 2 minutos.';
   if (data.error) feedback(data.error, true);
